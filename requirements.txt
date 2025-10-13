@@ -1,0 +1,9 @@
+Django==4.2.7
+djangorestframework==3.14.0
+python-dotenv==1.0.0
+backtrader==1.9.76.123
+pandas==2.2.3
+matplotlib==3.9.3
+ccxt==4.4.49
+django-oauth-toolkit==1.5.0
+
