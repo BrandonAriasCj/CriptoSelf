@@ -1,14 +1,23 @@
-# Backend Django Básico
+# Backend Django con Autenticación Avanzada
 
-Un backend básico desarrollado con Django y Django REST Framework.
+Un backend robusto desarrollado con Django, Django REST Framework, OAuth2 y autenticación social.
 
 ## Características
 
+### 🔐 Sistema de Autenticación
+- Autenticación OAuth2 con Django OAuth Toolkit
+- Autenticación social (Google, GitHub) con Django Allauth
+- Modelo de usuario personalizado con perfiles extendidos
+- Gestión de tokens con scopes granulares
+- Verificación de email y recuperación de contraseña
+
+### 📊 API y Funcionalidades
 - API REST con Django REST Framework
+- Sistema de backtesting con Backtrader
 - Modelo de tareas (Task) con operaciones CRUD
-- Panel de administración de Django
+- Panel de administración personalizado
 - Configuración con variables de entorno
-- Base de datos SQLite (por defecto)
+- Base de datos SQLite (configurable)
 
 ## Instalación
 
@@ -38,22 +47,42 @@ cp .env.example .env
 
 5. Ejecutar migraciones:
 ```bash
+python manage.py makemigrations users
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-6. Crear superusuario (opcional):
+6. Crear aplicación OAuth2:
+```bash
+python manage.py create_oauth_app --name "Mi App Frontend"
+```
+
+7. Crear superusuario:
 ```bash
 python manage.py createsuperuser
 ```
 
-7. Ejecutar el servidor:
+8. Ejecutar el servidor:
 ```bash
 python manage.py runserver
 ```
 
 ## Endpoints de la API
 
+### 🔐 Autenticación
+- `POST /api/auth/register/` - Registro de usuarios
+- `POST /api/auth/token/` - Obtener token OAuth2
+- `GET /api/auth/profile/` - Ver/editar perfil de usuario
+- `POST /api/auth/change-password/` - Cambiar contraseña
+- `POST /api/auth/logout/` - Cerrar sesión
+- `GET /api/auth/user-info/` - Información del usuario
+
+### 📊 Backtesting
+- `GET /api/backtesting/run-demo/` - Ejecutar demo de backtesting
+- `POST /api/backtesting/run-custom/` - Backtesting personalizado
+- `GET /api/backtesting/strategy-info/` - Información de estrategias
+
+### 📝 Tareas
 - `GET /api/health/` - Verificar estado de la API
 - `GET /api/tasks/` - Listar todas las tareas
 - `POST /api/tasks/` - Crear nueva tarea
@@ -61,6 +90,10 @@ python manage.py runserver
 - `PUT /api/tasks/{id}/` - Actualizar tarea completa
 - `PATCH /api/tasks/{id}/` - Actualizar tarea parcialmente
 - `DELETE /api/tasks/{id}/` - Eliminar tarea
+
+### 🌐 Autenticación Social
+- `/accounts/google/login/` - Login con Google
+- `/accounts/github/login/` - Login con GitHub
 
 ## Panel de Administración
 
@@ -75,70 +108,4 @@ backend/
 ├── manage.py         # Utilidad de Django
 ├── requirements.txt  # Dependencias
 └── README.md        # Este archivo
-```
-## 🚀 
-Inicio Rápido
-
-### Opción 1: Solo Backend (API)
-```bash
-# 1. Configurar backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env
-
-# 2. Base de datos
-python manage.py makemigrations users
-python manage.py migrate
-
-# 3. OAuth2 y admin
-python manage.py create_oauth_app --name "API Client"
-python manage.py createsuperuser
-
-# 4. Ejecutar
-python manage.py runserver
-```
-
-### Opción 2: Fullstack (Django + React)
-```bash
-# 1. Backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env
-python manage.py makemigrations users
-python manage.py migrate
-python manage.py create_oauth_app --name "React Frontend"
-python manage.py createsuperuser
-
-# 2. Frontend (nueva terminal)
-cd frontend
-npm install
-cp .env.example .env
-# Editar frontend/.env con las credenciales OAuth2
-npm start
-
-# 3. Backend (terminal original)
-python manage.py runserver
-```
-
-### Acceso
-- **React App**: http://localhost:3000
-- **Django API**: http://localhost:8000/api/
-- **Django Admin**: http://localhost:8000/admin/
-
-## 🔧 Configuración OAuth2
-
-Después de ejecutar `create_oauth_app`, copia las credenciales:
-
-**Backend (.env):**
-```env
-SECRET_KEY=tu-clave-secreta
-DEBUG=True
-```
-
-**Frontend (frontend/.env):**
-```env
-REACT_APP_OAUTH_CLIENT_ID=tu-client-id-aqui
-REACT_APP_OAUTH_CLIENT_SECRET=tu-client-secret-aqui
 ```
