@@ -95,6 +95,13 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# React Frontend
+REACT_APP_DIR = BASE_DIR / 'frontend'
+STATICFILES_DIRS = [
+    REACT_APP_DIR / 'build' / 'static',
+] if (REACT_APP_DIR / 'build').exists() else []
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
