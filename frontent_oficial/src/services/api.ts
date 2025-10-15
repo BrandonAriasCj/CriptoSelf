@@ -1,0 +1,212 @@
+import axios, { AxiosResponse } from 'axios';
+import {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  RegisterResponse,
+  User,
+  ChangePasswordRequest,
+  SocialAuthRequest,
+} from '../types/auth';
+
+// Configuración base de Axios
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Interceptor para agregar token automáticamente
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Interceptor para manejar errores de autenticación
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.log('API Error:', error.response?.status, error.response?.data);
+    
+    if (error.response?.status === 401) {
+      // Solo hacer logout automático si no estamos en páginas de auth o logout
+      const currentPath = window.location.pathname;
+      const isAuthPage = currentPath === '/auth' || currentPath === '/login' || currentPath === '/register';
+      const isLogoutRequest = error.config?.url?.includes('/logout/');
+      
+      if (!isAuthPage && !isLogoutRequest) {
+        console.log('Token expirado o inválido, redirigiendo al login');
+        
+        // Limpiar storage de forma segura
+        try {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user');
+        } catch (e) {
+          console.warn('Error limpiando localStorage:', e);
+        }
+        
+        // Redirigir con un pequeño delay para evitar problemas de renderizado
+        setTimeout(() => {
+          window.location.href = '/auth';
+        }, 100);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Configuración OAuth2
+const getOAuthConfig = () => ({
+  client_id: import.meta.env.VITE_OAUTH_CLIENT_ID || 'your-client-id',
+  client_secret: import.meta.env.VITE_OAUTH_CLIENT_SECRET || 'your-client-secret',
+});
+
+// Servicios de Autenticación Tradicional
+export const authService = {
+  async login(email: string, password: string): Promise<LoginResponse> {
+    const response: AxiosResponse<LoginResponse> = await api.post('/auth/token/', {
+      username: email,
+      password,
+      ...getOAuthConfig(),
+    });
+    return response.data;
+  },
+
+  async register(data: RegisterRequest): Promise<RegisterResponse> {
+    const response: AxiosResponse<RegisterResponse> = await api.post('/auth/register/', data);
+    return response.data;
+  },
+
+  async getProfile(): Promise<User> {
+    const response: AxiosResponse<User> = await api.get('/auth/profile/');
+    return response.data;
+  },
+
+  async updateProfile(data: Partial<User>): Promise<User> {
+    const response: AxiosResponse<User> = await api.patch('/auth/profile/', data);
+    return response.data;
+  },
+
+  async changePassword(data: ChangePasswordRequest): Promise<{ message: string }> {
+    const response: AxiosResponse<{ message: string }> = await api.post('/auth/change-password/', data);
+    return response.data;
+  },
+
+  async logout(): Promise<{ message: string }> {
+    const response: AxiosResponse<{ message: string }> = await api.post('/auth/logout/');
+    return response.data;
+  },
+
+  async getUserInfo(): Promise<{ user: User; scopes: string[] }> {
+    const response: AxiosResponse<{ user: User; scopes: string[] }> = await api.get('/auth/user-info/');
+    return response.data;
+  },
+};
+
+// Servicios de Autenticación Social
+export const socialAuthService = {
+  async loginWithGoogle(accessToken: string): Promise<LoginResponse> {
+    const response: AxiosResponse<LoginResponse> = await api.post('/auth/social/', {
+      provider: 'google',
+      access_token: accessToken,
+    });
+    return response.data;
+  },
+
+  async loginWithGitHub(accessToken: string): Promise<LoginResponse> {
+    const response: AxiosResponse<LoginResponse> = await api.post('/auth/social/', {
+      provider: 'github',
+      access_token: accessToken,
+    });
+    return response.data;
+  },
+
+  // Función genérica para cualquier proveedor social
+  async loginWithProvider(data: SocialAuthRequest): Promise<LoginResponse> {
+    const response: AxiosResponse<LoginResponse> = await api.post('/auth/social/', data);
+    return response.data;
+  },
+};
+
+// Servicio de salud de la API
+export const healthService = {
+  async checkHealth(): Promise<{ status: string; message: string }> {
+    const response: AxiosResponse<{ status: string; message: string }> = await api.get('/health/');
+    return response.data;
+  },
+};
+
+// Funciones auxiliares para OAuth2 social
+export const googleAuth = {
+  getAuthUrl(): string {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/auth/google/callback`;
+    const scope = 'openid email profile';
+    
+    return `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${clientId}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `scope=${encodeURIComponent(scope)}&` +
+      `response_type=code&` +
+      `access_type=offline`;
+  },
+
+  async handleCallback(code: string): Promise<string> {
+    // Intercambiar código por token de acceso
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        client_secret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || '',
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: `${window.location.origin}/auth/google/callback`,
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+    return tokenData.access_token;
+  },
+};
+
+export const githubAuth = {
+  getAuthUrl(): string {
+    const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/auth/github/callback`;
+    const scope = 'user:email';
+    
+    return `https://github.com/login/oauth/authorize?` +
+      `client_id=${clientId}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `scope=${encodeURIComponent(scope)}`;
+  },
+
+  async handleCallback(code: string): Promise<string> {
+    // Intercambiar código por token de acceso
+    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        client_id: import.meta.env.VITE_GITHUB_CLIENT_ID,
+        client_secret: import.meta.env.VITE_GITHUB_CLIENT_SECRET || '',
+        code,
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+    return tokenData.access_token;
+  },
+};
+
+export default api;

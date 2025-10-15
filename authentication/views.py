@@ -9,7 +9,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.core.mail import send_mail
 from django.conf import settings
 from oauth2_provider.models import Application, AccessToken
-from oauth2_provider import permissions as oauth2_permissions
+from oauth2_provider.contrib.rest_framework import TokenHasScope
 from users.serializers import (
     UserSerializer, UserCreateSerializer, UserUpdateSerializer, 
     ChangePasswordSerializer
@@ -46,8 +46,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     Ver y actualizar perfil del usuario autenticado
     """
     serializer_class = UserUpdateSerializer
-    permission_classes = [oauth2_permissions.TokenHasScope]
-    required_scopes = ['read', 'write']
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
         return self.request.user
@@ -62,7 +61,7 @@ class ChangePasswordView(APIView):
     """
     Cambiar contraseña del usuario autenticado
     """
-    permission_classes = [oauth2_permissions.TokenHasScope]
+    permission_classes = [TokenHasScope]
     required_scopes = ['write']
 
     def post(self, request):
@@ -93,69 +92,97 @@ def oauth_token(request):
     """
     Obtener token OAuth2 usando credenciales
     """
+    # Debug: imprimir datos recibidos
+    print("=== DEBUG LOGIN ===")
+    print(f"Request data: {request.data}")
+    print(f"Content-Type: {request.content_type}")
+    
     username = request.data.get('username')
     password = request.data.get('password')
     client_id = request.data.get('client_id')
     client_secret = request.data.get('client_secret')
     
+    print(f"Username: {username}")
+    print(f"Password: {'*' * len(password) if password else None}")
+    print(f"Client ID: {client_id}")
+    print(f"Client Secret: {'*' * 10 if client_secret else None}")
+    
     if not all([username, password, client_id, client_secret]):
+        missing = []
+        if not username: missing.append('username')
+        if not password: missing.append('password')
+        if not client_id: missing.append('client_id')
+        if not client_secret: missing.append('client_secret')
+        
         return Response({
-            'error': 'Faltan parámetros requeridos'
+            'error': f'Faltan parámetros requeridos: {", ".join(missing)}'
         }, status=status.HTTP_400_BAD_REQUEST)
     
     try:
         # Verificar aplicación OAuth2
-        application = Application.objects.get(
-            client_id=client_id,
-            client_secret=client_secret
-        )
+        print(f"Buscando aplicación con client_id: {client_id}")
+        application = Application.objects.get(client_id=client_id)
+        print(f"Aplicación encontrada: {application.name}")
+        
+        if application.client_secret != client_secret:
+            print("Client secret no coincide")
+            return Response({
+                'error': 'Client secret inválido'
+            }, status=status.HTTP_401_UNAUTHORIZED)
         
         # Autenticar usuario
+        print(f"Autenticando usuario: {username}")
         user = authenticate(username=username, password=password)
+        print(f"Usuario autenticado: {user}")
+        
         if not user:
             return Response({
                 'error': 'Credenciales inválidas'
             }, status=status.HTTP_401_UNAUTHORIZED)
         
-        # Hacer request al endpoint de token de Django OAuth Toolkit
-        token_url = request.build_absolute_uri('/o/token/')
-        token_data = {
-            'grant_type': 'password',
-            'username': username,
-            'password': password,
-            'client_id': client_id,
-            'client_secret': client_secret,
-        }
+        # Usar Django OAuth Toolkit directamente
+        from oauth2_provider.models import AccessToken
+        from django.conf import settings
+        from datetime import datetime, timedelta
+        import secrets
         
-        response = requests.post(token_url, data=token_data)
+        # Obtener configuración de OAuth2
+        oauth2_config = getattr(settings, 'OAUTH2_PROVIDER', {})
+        expires_seconds = oauth2_config.get('ACCESS_TOKEN_EXPIRE_SECONDS', 3600)
         
-        if response.status_code == 200:
-            token_info = response.json()
-            return Response({
-                'access_token': token_info['access_token'],
-                'refresh_token': token_info['refresh_token'],
-                'expires_in': token_info['expires_in'],
-                'token_type': token_info['token_type'],
-                'scope': token_info['scope'],
-                'user': UserSerializer(user).data
-            })
-        else:
-            return Response({
-                'error': 'Error al generar token'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        # Crear token manualmente
+        access_token = AccessToken.objects.create(
+            user=user,
+            application=application,
+            token=secrets.token_urlsafe(30),
+            expires=datetime.now() + timedelta(seconds=expires_seconds),
+            scope='read write'
+        )
+        
+        return Response({
+            'access_token': access_token.token,
+            'token_type': 'Bearer',
+            'expires_in': expires_seconds,
+            'scope': 'read write',
+            'user': UserSerializer(user).data
+        })
             
     except Application.DoesNotExist:
+        print("Aplicación OAuth2 no encontrada")
         return Response({
             'error': 'Aplicación OAuth2 no válida'
         }, status=status.HTTP_401_UNAUTHORIZED)
     except Exception as e:
+        print(f"Error inesperado: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return Response({
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
-@permission_classes([oauth2_permissions.TokenHasScope])
+@permission_classes([TokenHasScope])
 def logout(request):
     """
     Cerrar sesión revocando el token
@@ -175,7 +202,7 @@ def logout(request):
 
 
 @api_view(['GET'])
-@permission_classes([oauth2_permissions.TokenHasScope])
+@permission_classes([TokenHasScope])
 def user_info(request):
     """
     Información del usuario autenticado
@@ -203,9 +230,185 @@ class SocialAuthView(APIView):
                 'error': 'Provider y access_token son requeridos'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Aquí integrarías con django-allauth
-        # Por ahora retornamos un placeholder
+        try:
+            # Obtener información del usuario desde el proveedor
+            user_info = self.get_user_info_from_provider(provider, access_token)
+            
+            if not user_info:
+                return Response({
+                    'error': 'No se pudo obtener información del usuario'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Buscar o crear usuario
+            user = self.get_or_create_user(user_info, provider)
+            
+            # Crear token OAuth2
+            from oauth2_provider.models import Application, AccessToken
+            from django.conf import settings
+            from datetime import datetime, timedelta
+            import secrets
+            
+            # Obtener la aplicación OAuth2
+            try:
+                application = Application.objects.get(
+                    client_id=settings.OAUTH2_PROVIDER.get('CLIENT_ID', 'default-client-id')
+                )
+            except Application.DoesNotExist:
+                # Usar la primera aplicación disponible
+                application = Application.objects.first()
+                if not application:
+                    return Response({
+                        'error': 'No hay aplicaciones OAuth2 configuradas'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            # Crear token
+            oauth2_config = getattr(settings, 'OAUTH2_PROVIDER', {})
+            expires_seconds = oauth2_config.get('ACCESS_TOKEN_EXPIRE_SECONDS', 3600)
+            
+            access_token_obj = AccessToken.objects.create(
+                user=user,
+                application=application,
+                token=secrets.token_urlsafe(30),
+                expires=datetime.now() + timedelta(seconds=expires_seconds),
+                scope='read write'
+            )
+            
+            return Response({
+                'access_token': access_token_obj.token,
+                'token_type': 'Bearer',
+                'expires_in': expires_seconds,
+                'scope': 'read write',
+                'user': UserSerializer(user).data
+            })
+            
+        except Exception as e:
+            print(f"Error en autenticación social: {str(e)}")
+            return Response({
+                'error': f'Error en autenticación con {provider}: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def get_user_info_from_provider(self, provider, access_token):
+        """Obtener información del usuario desde el proveedor social"""
+        import requests
+        
+        try:
+            if provider == 'google':
+                response = requests.get(
+                    'https://www.googleapis.com/oauth2/v2/userinfo',
+                    headers={'Authorization': f'Bearer {access_token}'}
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    return {
+                        'email': data.get('email'),
+                        'first_name': data.get('given_name', ''),
+                        'last_name': data.get('family_name', ''),
+                        'username': data.get('email', '').split('@')[0],
+                        'avatar_url': data.get('picture'),
+                        'provider_id': data.get('id'),
+                    }
+            
+            elif provider == 'github':
+                # Obtener información del usuario
+                user_response = requests.get(
+                    'https://api.github.com/user',
+                    headers={'Authorization': f'token {access_token}'}
+                )
+                
+                if user_response.status_code == 200:
+                    user_data = user_response.json()
+                    
+                    # Obtener email (puede ser privado)
+                    email_response = requests.get(
+                        'https://api.github.com/user/emails',
+                        headers={'Authorization': f'token {access_token}'}
+                    )
+                    
+                    email = user_data.get('email')
+                    if not email and email_response.status_code == 200:
+                        emails = email_response.json()
+                        primary_email = next((e for e in emails if e.get('primary')), None)
+                        if primary_email:
+                            email = primary_email.get('email')
+                    
+                    name_parts = (user_data.get('name') or '').split(' ', 1)
+                    first_name = name_parts[0] if name_parts else ''
+                    last_name = name_parts[1] if len(name_parts) > 1 else ''
+                    
+                    return {
+                        'email': email,
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'username': user_data.get('login'),
+                        'avatar_url': user_data.get('avatar_url'),
+                        'provider_id': str(user_data.get('id')),
+                    }
+            
+            return None
+            
+        except Exception as e:
+            print(f"Error obteniendo información de {provider}: {str(e)}")
+            return None
+    
+    def get_or_create_user(self, user_info, provider):
+        """Buscar o crear usuario basado en la información del proveedor"""
+        email = user_info.get('email')
+        username = user_info.get('username')
+        
+        if not email:
+            raise ValueError('Email es requerido para la autenticación social')
+        
+        # Buscar usuario existente por email
+        try:
+            user = User.objects.get(email=email)
+            # Actualizar información si es necesario
+            if not user.first_name and user_info.get('first_name'):
+                user.first_name = user_info.get('first_name')
+            if not user.last_name and user_info.get('last_name'):
+                user.last_name = user_info.get('last_name')
+            user.save()
+            return user
+        except User.DoesNotExist:
+            pass
+        
+        # Crear nuevo usuario
+        # Asegurar que el username sea único
+        base_username = username or email.split('@')[0]
+        unique_username = base_username
+        counter = 1
+        while User.objects.filter(username=unique_username).exists():
+            unique_username = f"{base_username}{counter}"
+            counter += 1
+        
+        user = User.objects.create(
+            email=email,
+            username=unique_username,
+            first_name=user_info.get('first_name', ''),
+            last_name=user_info.get('last_name', ''),
+            is_verified=True,  # Los usuarios sociales se consideran verificados
+            email_verified=True,
+        )
+        
+        return user
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([permissions.AllowAny])
+def test_auth(request):
+    """
+    Endpoint de prueba para diagnosticar problemas de autenticación
+    """
+    if request.method == 'GET':
         return Response({
-            'message': f'Autenticación con {provider} en desarrollo',
-            'provider': provider
-        }, status=status.HTTP_501_NOT_IMPLEMENTED)
+            'message': 'Endpoint de prueba funcionando',
+            'method': 'GET'
+        })
+    
+    # POST - probar autenticación
+    data = request.data
+    return Response({
+        'message': 'Datos recibidos correctamente',
+        'method': 'POST',
+        'data': data,
+        'content_type': request.content_type
+    })

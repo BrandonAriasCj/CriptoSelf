@@ -20,4 +20,7 @@ urlpatterns = [
     
     # Django Allauth URLs
     path('accounts/', include('allauth.urls')),
+    
+    # Test endpoint
+    path('test/', views.test_auth, name='test_auth'),
 ]

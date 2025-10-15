@@ -1,6 +1,30 @@
-# Backend Django con Autenticación Avanzada
+# 🚀 CriptoSelf - Plataforma de Trading Algorítmico
 
-Un backend robusto desarrollado con Django, Django REST Framework, OAuth2 y autenticación social.
+Una plataforma completa de trading algorítmico con autenticación avanzada, construida con Django REST Framework y React + Vite.
+
+## ⚡ Inicio Rápido
+
+### Windows
+```bash
+# Doble clic o ejecutar:
+start-dev.bat
+```
+
+### Linux/Mac
+```bash
+chmod +x start-dev.sh
+./start-dev.sh
+```
+
+### Multiplataforma
+```bash
+node start-dev.js
+```
+
+## 🌐 URLs de Desarrollo
+- **Frontend**: http://localhost:3000
+- **Backend**: http://localhost:8000  
+- **Admin**: http://localhost:8000/admin
 
 ## Características
 
