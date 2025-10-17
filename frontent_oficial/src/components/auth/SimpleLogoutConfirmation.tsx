@@ -18,7 +18,8 @@ export const SimpleLogoutConfirmation: React.FC<SimpleLogoutConfirmationProps> =
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="flex">
+    <div className="fixed flex-1 inset-0 z-50 flex items-center justify-center sm:p-0 md:p-6 lg:p-10">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -26,7 +27,7 @@ export const SimpleLogoutConfirmation: React.FC<SimpleLogoutConfirmationProps> =
       />
       
       {/* Modal */}
-      <div className="relative bg-card border border-border rounded-lg shadow-brand p-6 w-full max-w-md mx-4 transition-theme">
+      <div className="relative bg-card border border-border rounded-lg shadow-brand p-6 w-full max-w-md mx-6 transition-theme">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -58,23 +59,24 @@ export const SimpleLogoutConfirmation: React.FC<SimpleLogoutConfirmationProps> =
         </div>
 
         {/* Footer */}
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row">
           <Button
             variant="outline"
             onClick={onClose}
-            className="w-full sm:w-auto"
+            className="flex-1"
           >
-            Cancelar
+            Cancel
           </Button>
           <Button
             onClick={onConfirm}
-            className="w-full sm:w-auto bg-destructive hover:bg-destructive/90 text-destructive-foreground-adaptive transition-theme"
+            className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground-adaptive transition-theme"
           >
             <LogOut className="mr-2 h-4 w-4" />
             Cerrar Sesión
           </Button>
         </div>
       </div>
+    </div>
     </div>
   );
 };

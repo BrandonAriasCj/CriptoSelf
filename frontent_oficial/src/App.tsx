@@ -442,7 +442,8 @@ const MainApp: React.FC = () => {
       </div>
 
       {/* Logout Confirmation Dialog */}
-      <SimpleLogoutConfirmation
+      <div className="p-6">
+        <SimpleLogoutConfirmation
         isOpen={showLogoutConfirmation}
         onClose={() => setShowLogoutConfirmation(false)}
         onConfirm={confirmLogout}
@@ -452,6 +453,7 @@ const MainApp: React.FC = () => {
             : user?.username
         }
       />
+      </div>
     </div>
 
   );
