@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import PriceChart from '../components/PriceChart';
 import { TradingPanel } from '../components/TradingPanel';
 import { OrderBook } from '../components/OrderBook';
+import { BacktestingDemo } from '../components/BacktestingDemo';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import Chartx from '../components/Chartx' 
 import { TrendingUp, TrendingDown, Activity, Zap, BarChart3, DollarSign } from 'lucide-react';
 
 const marketData = {
@@ -158,9 +158,10 @@ export function TradingDashboard() {
             </CardContent>
           </Card>
         </div>
-        <h1 style={{color: "white"}}>Punto de enccuentro</h1>
-        <Chartx name="adfsa" age="10"></Chartx>
-        <h1 style={{color: "white"}}>Punto de enccuentro 001</h1>
+        {/* Backtesting Demo Section */}
+        <div className="xl:col-span-4">
+          <BacktestingDemo />
+        </div>
 
         {/* Trading Panel & Order Book */}
         <div className="space-y-4">

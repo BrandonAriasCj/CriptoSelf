@@ -14,10 +14,12 @@ import ccxt
 import pandas as pd
 
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.decorators import permission_classes
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def run_backtesting_demo(request):
     """
     Ejecuta el demo de backtesting y retorna los resultados
@@ -65,6 +67,11 @@ def run_backtesting_demo(request):
             volma = list(estrategia.vol_ma)
             historico_vol_max = list(estrategia.vol_ma_values)
             datas_close_list = list(estrategia.datas_close)
+            
+            # Convertir NaN a None para JSON válido
+            import math
+            indi_clean = [None if math.isnan(x) else x for x in indi]
+            volma_clean = [None if math.isnan(x) else x for x in volma]
 
 
 
@@ -84,8 +91,8 @@ def run_backtesting_demo(request):
         return JsonResponse({
                 "fechas": [f.strftime("%Y-%m-%d %H:%M:%S") for f in fechas],
                 "precio": precios,
-                "patronVela": indi,
-                "volma": volma,
+                "patronVela": indi_clean,
+                "volma": volma_clean,
                 "historial": historico_vol_max,
                 "datas closed": datas_close_list,
          })
@@ -213,6 +220,7 @@ def run_custom_backtesting(request):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_strategy_info(request):
     """
     Retorna información sobre la estrategia de backtesting
