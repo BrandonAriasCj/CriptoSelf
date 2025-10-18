@@ -133,26 +133,25 @@ export function Education() {
           <Button
             variant="ghost"
             onClick={() => setSelectedCourse(null)}
-            className="text-gray-400 hover:text-white"
           >
             ← Volver
           </Button>
         </div>
 
-        <Card className="bg-gray-900 border-gray-700">
+        <Card>
           <CardHeader>
             <div className="flex items-start gap-4">
               <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
                 <course.icon className="w-8 h-8 text-white" />
               </div>
               <div className="flex-1">
-                <CardTitle className="text-white text-2xl mb-2">{course.title}</CardTitle>
-                <p className="text-gray-400 mb-4">{course.description}</p>
+                <CardTitle className="text-2xl mb-2">{course.title}</CardTitle>
+                <p className="text-muted-foreground mb-4">{course.description}</p>
                 <div className="flex items-center gap-4">
                   <Badge className={getDifficultyColor(course.difficulty)}>
                     {course.difficulty}
                   </Badge>
-                  <span className="text-sm text-gray-400">{course.lessons.length} lecciones</span>
+                  <span className="text-sm text-muted-foreground">{course.lessons.length} lecciones</span>
                 </div>
               </div>
             </div>
@@ -160,8 +159,8 @@ export function Education() {
           <CardContent>
             <div className="mb-6">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-400">Progreso</span>
-                <span className="text-sm text-white">{course.progress}%</span>
+                <span className="text-sm text-muted-foreground">Progreso</span>
+                <span className="text-sm">{course.progress}%</span>
               </div>
               <Progress value={course.progress} className="h-2" />
             </div>
@@ -170,22 +169,22 @@ export function Education() {
 
         <div className="space-y-4">
           {course.lessons.map((lesson, index) => (
-            <Card key={lesson.id} className="bg-gray-800 border-gray-600">
+            <Card key={lesson.id}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 flex-1">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      lesson.completed ? 'bg-green-500' : 'bg-gray-600'
+                      lesson.completed ? 'bg-green-500' : 'bg-muted'
                     }`}>
                       {lesson.completed ? (
                         <CheckCircle className="w-5 h-5 text-white" />
                       ) : (
-                        <span className="text-white font-medium">{index + 1}</span>
+                        <span className="font-medium">{index + 1}</span>
                       )}
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-medium text-white mb-1">{lesson.title}</h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <h3 className="font-medium mb-1">{lesson.title}</h3>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock className="w-4 h-4" />
                         <span>{lesson.duration}</span>
                       </div>
@@ -215,8 +214,8 @@ export function Education() {
               <BookOpen className="w-8 h-8 text-white" />
             </div>
             <div>
-              <CardTitle className="text-white text-2xl">Academia CriptoSelf</CardTitle>
-              <p className="text-gray-300">Aprende trading cuantitativo paso a paso</p>
+              <CardTitle className="text-2xl">Academia CriptoSelf</CardTitle>
+              <p className="text-muted-foreground">Aprende trading cuantitativo paso a paso</p>
             </div>
           </div>
         </CardHeader>
@@ -230,7 +229,7 @@ export function Education() {
           return (
             <Card 
               key={course.id} 
-              className="bg-gray-900 border-gray-700 hover:border-gray-600 transition-colors cursor-pointer"
+              className="hover:border-muted-foreground transition-colors cursor-pointer"
               onClick={() => setSelectedCourse(course.id)}
             >
               <CardHeader>
@@ -239,8 +238,8 @@ export function Education() {
                     <Icon className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <CardTitle className="text-white text-lg mb-2">{course.title}</CardTitle>
-                    <p className="text-gray-400 text-sm mb-3">{course.description}</p>
+                    <CardTitle className="text-lg mb-2">{course.title}</CardTitle>
+                    <p className="text-muted-foreground text-sm mb-3">{course.description}</p>
                     <Badge className={getDifficultyColor(course.difficulty)}>
                       {course.difficulty}
                     </Badge>
@@ -250,13 +249,13 @@ export function Education() {
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-400">Progreso</span>
-                    <span className="text-sm text-white">{course.progress}%</span>
+                    <span className="text-sm text-muted-foreground">Progreso</span>
+                    <span className="text-sm">{course.progress}%</span>
                   </div>
                   <Progress value={course.progress} className="h-2" />
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-500">{course.lessons.length} lecciones</span>
-                    <ArrowRight className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs text-muted-foreground">{course.lessons.length} lecciones</span>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -266,16 +265,16 @@ export function Education() {
       </div>
 
       {/* Quick Tips */}
-      <Card className="bg-gray-900 border-gray-700">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white">💡 Consejos Rápidos</CardTitle>
+          <CardTitle>💡 Consejos Rápidos</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {quickTips.map((tip, index) => (
-              <div key={index} className="flex items-start gap-3 p-3 bg-gray-800 rounded-lg">
+              <div key={index} className="flex items-start gap-3 p-3 bg-muted rounded-lg">
                 <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-300 text-sm">{tip}</span>
+                <span className="text-sm">{tip}</span>
               </div>
             ))}
           </div>

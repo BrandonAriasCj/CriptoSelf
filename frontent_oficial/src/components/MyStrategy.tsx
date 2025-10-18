@@ -158,7 +158,7 @@ export function MyStrategy() {
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
       {/* Strategy Header */}
-      <Card className="bg-card">
+      <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -167,12 +167,12 @@ export function MyStrategy() {
               </div>
               <div>
                 <CardTitle className="text-xl">{strategyName}</CardTitle>
-                <p className="">Powered by CriptoSelf</p>
+                <p>Powered by CriptoSelf</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Label className="">Estado:</Label>
+                <Label>Estado:</Label>
                 <Switch 
                   checked={isActive} 
                   onCheckedChange={setIsActive}
@@ -187,11 +187,11 @@ export function MyStrategy() {
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <Label className="">Nombre de la Estrategia</Label>
+              <Label>Nombre de la Estrategia</Label>
               <Input
                 value={strategyName}
                 onChange={(e) => setStrategyName(e.target.value)}
-                className="bg-gray-800 border-gray-600 text-white mt-1"
+                className="mt-1"
               />
             </div>
             <div className="flex gap-2 items-end">
@@ -202,7 +202,7 @@ export function MyStrategy() {
                 <TestTube className="w-4 h-4 mr-2" />
                 Ejecutar Backtesting
               </Button>
-              <Button variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
+              <Button variant="outline">
                 <Settings className="w-4 h-4" />
               </Button>
             </div>
@@ -213,25 +213,25 @@ export function MyStrategy() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Active Triggers */}
         <div className="lg:col-span-2">
-          <Card className="">
+          <Card>
             <CardHeader>
-              <CardTitle className="">Triggers Activos</CardTitle>
-              <p className="text-gray-400">Señales que activarán tu estrategia de trading</p>
+              <CardTitle>Triggers Activos</CardTitle>
+              <p className="text-muted-foreground">Señales que activarán tu estrategia de trading</p>
             </CardHeader>
             <CardContent className="space-y-4">
               {activeTriggers.map((trigger) => {
                 const Icon = trigger.icon;
                 return (
-                  <Card key={trigger.id} className="">
+                  <Card key={trigger.id}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10  rounded-lg flex items-center justify-center">
-                            <Icon className="w-5 h-5 " />
+                          <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
+                            <Icon className="w-5 h-5" />
                           </div>
                           <div>
                             <h4 className="font-medium">{trigger.name}</h4>
-                            <p className="text-sm">{trigger.description}</p>
+                            <p className="text-sm text-muted-foreground">{trigger.description}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -246,7 +246,7 @@ export function MyStrategy() {
                             variant="outline"
                             size="sm"
                             onClick={() => removeTrigger(trigger.id)}
-                            className="border-red-600 text-red-400 hover:bg-red-900/20"
+                            className="border-destructive text-destructive hover:bg-destructive/10"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -255,10 +255,10 @@ export function MyStrategy() {
 
                       {/* Trigger Parameters */}
                       {trigger.enabled && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-600">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-4 border-t">
                           {Object.entries(trigger.params).map(([key, value]) => (
                             <div key={key}>
-                              <Label className="text-xs text-gray-400 scapitalize">
+                              <Label className="text-xs text-muted-foreground capitalize">
                                 {key.replace('_', ' ')}
                               </Label>
                               <Input
@@ -269,7 +269,7 @@ export function MyStrategy() {
                                   key, 
                                   typeof value === 'number' ? parseFloat(e.target.value) : e.target.value
                                 )}
-                                className="bg-gray-700 border-gray-500 text-white text-sm h-8"
+                                className="text-sm h-8"
                                 step={typeof value === 'number' ? '0.1' : undefined}
                               />
                             </div>
@@ -282,7 +282,7 @@ export function MyStrategy() {
               })}
 
               {activeTriggers.length === 0 && (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-8 text-muted-foreground">
                   <Bot className="w-16 h-16 mx-auto mb-4 opacity-50" />
                   <p>No hay triggers configurados</p>
                   <p className="text-sm">Agrega tu primer trigger para comenzar</p>
@@ -294,9 +294,9 @@ export function MyStrategy() {
 
         {/* Add New Trigger */}
         <div>
-          <Card className="bg-gray-900 border-gray-700">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-white">Agregar Trigger</CardTitle>
+              <CardTitle>Agregar Trigger</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {availableTriggers.map((trigger) => {
@@ -307,24 +307,24 @@ export function MyStrategy() {
                   <Button
                     key={trigger.type}
                     variant="outline"
-                    className="w-full h-auto p-3 border-gray-600 hover:bg-gray-800 justify-start"
+                    className="w-full h-auto p-3 justify-start"
                     onClick={() => addTrigger(trigger.type)}
                     disabled={isAdded}
                   >
                     <div className="flex items-center gap-3 w-full">
-                      <div className="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-4 h-4 text-gray-300" />
+                      <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-4 h-4" />
                       </div>
                       <div className="text-left flex-1">
-                        <p className="font-medium text-white text-sm">{trigger.name}</p>
-                        <p className="text-xs text-gray-400">{trigger.category}</p>
+                        <p className="font-medium text-sm">{trigger.name}</p>
+                        <p className="text-xs text-muted-foreground">{trigger.category}</p>
                       </div>
                       {isAdded ? (
                         <Badge variant="outline" className="text-xs">
                           Agregado
                         </Badge>
                       ) : (
-                        <Plus className="w-4 h-4 text-gray-400" />
+                        <Plus className="w-4 h-4" />
                       )}
                     </div>
                   </Button>
@@ -336,23 +336,23 @@ export function MyStrategy() {
           {/* Strategy Stats */}
           <Card className="mt-6">
             <CardHeader>
-              <CardTitle className="">Estadísticas</CardTitle>
+              <CardTitle>Estadísticas</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="">Triggers Activos</span>
-                <Badge className="">
+                <span>Triggers Activos</span>
+                <Badge>
                   {activeTriggers.filter(t => t.enabled).length}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
-                <span className="">Estado</span>
+                <span>Estado</span>
                 <Badge className={isActive ? 'bg-green-600' : 'bg-gray-600'}>
                   {isActive ? 'Ejecutándose' : 'Pausada'}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
-                <span className="">Última Activación</span>
+                <span>Última Activación</span>
                 <span className="text-sm">Hace 2 horas</span>
               </div>
             </CardContent>
