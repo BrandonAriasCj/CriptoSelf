@@ -158,21 +158,21 @@ export function MyStrategy() {
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
       {/* Strategy Header */}
-      <Card className="bg-gray-900 border-gray-700">
+      <Card className="bg-card">
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-blue-600 rounded-xl flex items-center justify-center">
-                <Bot className="w-6 h-6 text-white" />
+                <Bot className="w-6 h-6" />
               </div>
               <div>
-                <CardTitle className="text-white text-xl">{strategyName}</CardTitle>
-                <p className="text-gray-400">Powered by CriptoSelf</p>
+                <CardTitle className="text-xl">{strategyName}</CardTitle>
+                <p className="">Powered by CriptoSelf</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Label className="text-white">Estado:</Label>
+                <Label className="">Estado:</Label>
                 <Switch 
                   checked={isActive} 
                   onCheckedChange={setIsActive}
@@ -187,7 +187,7 @@ export function MyStrategy() {
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <Label className="text-white">Nombre de la Estrategia</Label>
+              <Label className="">Nombre de la Estrategia</Label>
               <Input
                 value={strategyName}
                 onChange={(e) => setStrategyName(e.target.value)}
@@ -213,25 +213,25 @@ export function MyStrategy() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Active Triggers */}
         <div className="lg:col-span-2">
-          <Card className="bg-gray-900 border-gray-700">
+          <Card className="">
             <CardHeader>
-              <CardTitle className="text-white">Triggers Activos</CardTitle>
+              <CardTitle className="">Triggers Activos</CardTitle>
               <p className="text-gray-400">Señales que activarán tu estrategia de trading</p>
             </CardHeader>
             <CardContent className="space-y-4">
               {activeTriggers.map((trigger) => {
                 const Icon = trigger.icon;
                 return (
-                  <Card key={trigger.id} className="bg-gray-800 border-gray-600">
+                  <Card key={trigger.id} className="">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
-                            <Icon className="w-5 h-5 text-gray-300" />
+                          <div className="w-10 h-10  rounded-lg flex items-center justify-center">
+                            <Icon className="w-5 h-5 " />
                           </div>
                           <div>
-                            <h4 className="font-medium text-white">{trigger.name}</h4>
-                            <p className="text-sm text-gray-400">{trigger.description}</p>
+                            <h4 className="font-medium">{trigger.name}</h4>
+                            <p className="text-sm">{trigger.description}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -334,26 +334,26 @@ export function MyStrategy() {
           </Card>
 
           {/* Strategy Stats */}
-          <Card className="bg-gray-900 border-gray-700 mt-6">
+          <Card className="mt-6">
             <CardHeader>
-              <CardTitle className="text-white">Estadísticas</CardTitle>
+              <CardTitle className="">Estadísticas</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Triggers Activos</span>
-                <Badge className="bg-emerald-600">
+                <span className="">Triggers Activos</span>
+                <Badge className="">
                   {activeTriggers.filter(t => t.enabled).length}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Estado</span>
+                <span className="">Estado</span>
                 <Badge className={isActive ? 'bg-green-600' : 'bg-gray-600'}>
                   {isActive ? 'Ejecutándose' : 'Pausada'}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Última Activación</span>
-                <span className="text-white text-sm">Hace 2 horas</span>
+                <span className="">Última Activación</span>
+                <span className="text-sm">Hace 2 horas</span>
               </div>
             </CardContent>
           </Card>
