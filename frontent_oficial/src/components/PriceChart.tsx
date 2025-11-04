@@ -1,7 +1,25 @@
 import React, { useEffect, useRef, useState } from "react";
 
+interface Position {
+  id: string;
+  type: 'long' | 'short';
+  pair: string;
+  size: number;
+  entryPrice: number;
+  leverage: number;
+  margin: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  timestamp: Date;
+  status: 'open' | 'closed';
+  pnl: number;
+  unrealizedPnL: number;
+}
+
 interface PriceChartProps {
   selectedPair?: string;
+  positions?: Position[];
+  currentPrice?: number;
 }
 
 interface PriceData {
@@ -9,11 +27,17 @@ interface PriceData {
   price: number;
 }
 
-const PriceChart: React.FC<PriceChartProps> = ({ selectedPair = 'BTC/USDT' }) => {
+const PriceChart: React.FC<PriceChartProps> = ({ 
+  selectedPair = 'BTC/USDT', 
+  positions = [], 
+  currentPrice: externalCurrentPrice 
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [priceData, setPriceData] = useState<PriceData[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [hoveredPosition, setHoveredPosition] = useState<Position | null>(null);
+  const [mousePos, setMousePos] = useState<{x: number, y: number}>({x: 0, y: 0});
   const wsRef = useRef<WebSocket | null>(null);
 
   // Constantes para la persistencia
@@ -270,9 +294,143 @@ const PriceChart: React.FC<PriceChartProps> = ({ selectedPair = 'BTC/USDT' }) =>
       ctx.fill();
     });
 
+    // Dibujar posiciones de trading
+    if (positions && positions.length > 0) {
+      positions.forEach((position: Position) => {
+        if (position.pair !== selectedPair) return;
+
+        const entryY = padding + ((maxPrice - position.entryPrice) / priceRange) * chartHeight;
+        
+        // Encontrar el punto temporal más cercano a la entrada
+        const entryTime = position.timestamp.getTime();
+        let entryX = padding;
+        
+        // Buscar la posición X basada en el tiempo de entrada
+        const timeRange = priceData.length > 1 ? 
+          new Date(priceData[priceData.length - 1].time).getTime() - new Date(priceData[0].time).getTime() : 
+          300000; // 5 minutos por defecto
+        
+        if (timeRange > 0) {
+          const timeFromStart = entryTime - new Date(priceData[0]?.time || Date.now()).getTime();
+          const timeRatio = Math.max(0, Math.min(1, timeFromStart / timeRange));
+          entryX = padding + (chartWidth * timeRatio);
+        }
+
+        // Línea horizontal de entrada
+        ctx.strokeStyle = position.type === 'long' ? '#22c55e' : '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(entryX, entryY);
+        ctx.lineTo(width - padding, entryY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Marcador de entrada
+        ctx.beginPath();
+        if (position.type === 'long') {
+          // Triángulo hacia arriba para LONG
+          ctx.moveTo(entryX, entryY - 8);
+          ctx.lineTo(entryX - 6, entryY + 4);
+          ctx.lineTo(entryX + 6, entryY + 4);
+        } else {
+          // Triángulo hacia abajo para SHORT
+          ctx.moveTo(entryX, entryY + 8);
+          ctx.lineTo(entryX - 6, entryY - 4);
+          ctx.lineTo(entryX + 6, entryY - 4);
+        }
+        ctx.closePath();
+        ctx.fillStyle = position.type === 'long' ? '#22c55e' : '#ef4444';
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Etiqueta de la posición
+        const labelText = `${position.type.toUpperCase()} ${position.size}`;
+        const labelWidth = ctx.measureText(labelText).width + 16;
+        const labelX = Math.min(entryX + 10, width - padding - labelWidth);
+        const labelY = entryY - 20;
+
+        ctx.fillStyle = position.type === 'long' ? '#22c55e' : '#ef4444';
+        ctx.fillRect(labelX, labelY - 8, labelWidth, 16);
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(labelText, labelX + 8, labelY + 2);
+
+        // Dibujar Stop Loss si existe
+        if (position.stopLoss) {
+          const slY = padding + ((maxPrice - position.stopLoss) / priceRange) * chartHeight;
+          ctx.strokeStyle = '#dc2626';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([2, 2]);
+          ctx.beginPath();
+          ctx.moveTo(entryX, slY);
+          ctx.lineTo(width - padding, slY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Etiqueta SL
+          ctx.fillStyle = '#dc2626';
+          ctx.fillRect(width - padding - 35, slY - 8, 30, 16);
+          ctx.fillStyle = 'white';
+          ctx.font = '9px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('SL', width - padding - 20, slY + 2);
+        }
+
+        // Dibujar Take Profit si existe
+        if (position.takeProfit) {
+          const tpY = padding + ((maxPrice - position.takeProfit) / priceRange) * chartHeight;
+          ctx.strokeStyle = '#16a34a';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([2, 2]);
+          ctx.beginPath();
+          ctx.moveTo(entryX, tpY);
+          ctx.lineTo(width - padding, tpY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Etiqueta TP
+          ctx.fillStyle = '#16a34a';
+          ctx.fillRect(width - padding - 35, tpY - 8, 30, 16);
+          ctx.fillStyle = 'white';
+          ctx.font = '9px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('TP', width - padding - 20, tpY + 2);
+        }
+
+        // Mostrar P&L no realizado para posiciones abiertas
+        if (position.status === 'open' && position.unrealizedPnL !== 0) {
+          const pnlColor = position.unrealizedPnL >= 0 ? '#22c55e' : '#ef4444';
+          const pnlText = `${position.unrealizedPnL >= 0 ? '+' : ''}$${position.unrealizedPnL.toFixed(2)}`;
+          
+          ctx.fillStyle = pnlColor;
+          ctx.fillRect(entryX + 50, entryY - 25, 60, 14);
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 9px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(pnlText, entryX + 80, entryY - 17);
+
+          // Línea de P&L desde entrada hasta precio actual
+          const currentPriceY = padding + ((maxPrice - (externalCurrentPrice || currentPrice)) / priceRange) * chartHeight;
+          ctx.strokeStyle = pnlColor;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([1, 3]);
+          ctx.beginPath();
+          ctx.moveTo(entryX, entryY);
+          ctx.lineTo(width - padding - 10, currentPriceY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      });
+    }
+
     // Mostrar precio actual
-    if (currentPrice > 0 && priceData.length > 0) {
-      const currentY = padding + ((maxPrice - currentPrice) / priceRange) * chartHeight;
+    const displayPrice = externalCurrentPrice || currentPrice;
+    if (displayPrice > 0 && priceData.length > 0) {
+      const currentY = padding + ((maxPrice - displayPrice) / priceRange) * chartHeight;
 
       // Línea horizontal del precio actual
       ctx.strokeStyle = '#10b981';
@@ -300,7 +458,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ selectedPair = 'BTC/USDT' }) =>
       ctx.fillStyle = 'white';
       ctx.font = 'bold 12px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(currentPrice.toFixed(selectedPair === 'ADA/USDT' ? 4 : 2), width - padding - 42, currentY + 4);
+      ctx.fillText(displayPrice.toFixed(selectedPair === 'ADA/USDT' ? 4 : 2), width - padding - 42, currentY + 4);
     }
 
     // Indicador de zoom adaptativo
@@ -358,7 +516,9 @@ const PriceChart: React.FC<PriceChartProps> = ({ selectedPair = 'BTC/USDT' }) =>
           if (message.k) {
             const k = message.k;
             const newPrice = parseFloat(k.c);
-            setCurrentPrice(newPrice);
+            if (!externalCurrentPrice) {
+              setCurrentPrice(newPrice);
+            }
 
             // Agregar nuevo punto de precio
             const newTime = new Date().toISOString();
@@ -417,7 +577,9 @@ const PriceChart: React.FC<PriceChartProps> = ({ selectedPair = 'BTC/USDT' }) =>
         const variation = (Math.random() - 0.5) * maxVariation;
         const newPrice = lastPrice * (1 + variation);
 
-        setCurrentPrice(newPrice);
+        if (!externalCurrentPrice) {
+          setCurrentPrice(newPrice);
+        }
 
         const newPricePoint: PriceData = {
           time: new Date().toISOString(),
@@ -465,7 +627,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ selectedPair = 'BTC/USDT' }) =>
   // Dibujar cuando cambien los datos
   useEffect(() => {
     drawChart();
-  }, [priceData, currentPrice]);
+  }, [priceData, currentPrice, positions, externalCurrentPrice]);
 
   // Configurar canvas al montar
   useEffect(() => {
@@ -481,13 +643,70 @@ const PriceChart: React.FC<PriceChartProps> = ({ selectedPair = 'BTC/USDT' }) =>
       }
     };
 
+    const handleMouseMove = (event: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      setMousePos({x: event.clientX, y: event.clientY});
+
+      // Verificar si el mouse está sobre alguna posición
+      let foundPosition: Position | null = null;
+      
+      if (positions && positions.length > 0) {
+        const padding = 40;
+        const chartWidth = canvas.width - padding * 2;
+        const chartHeight = canvas.height - padding * 2;
+        
+        if (priceData.length > 0) {
+          const prices = priceData.map((d: PriceData) => d.price);
+          const minPrice = Math.min(...prices) - (Math.max(...prices) - Math.min(...prices)) * 0.1;
+          const maxPrice = Math.max(...prices) + (Math.max(...prices) - Math.min(...prices)) * 0.1;
+          const priceRange = maxPrice - minPrice;
+
+          positions.forEach((position: Position) => {
+            if (position.pair !== selectedPair) return;
+
+            const entryY = padding + ((maxPrice - position.entryPrice) / priceRange) * chartHeight;
+            const entryTime = position.timestamp.getTime();
+            
+            let entryX = padding;
+            const timeRange = priceData.length > 1 ? 
+              new Date(priceData[priceData.length - 1].time).getTime() - new Date(priceData[0].time).getTime() : 
+              300000;
+            
+            if (timeRange > 0) {
+              const timeFromStart = entryTime - new Date(priceData[0]?.time || Date.now()).getTime();
+              const timeRatio = Math.max(0, Math.min(1, timeFromStart / timeRange));
+              entryX = padding + (chartWidth * timeRatio);
+            }
+
+            // Verificar si el mouse está cerca del marcador de posición
+            if (Math.abs(x - entryX) < 15 && Math.abs(y - entryY) < 15) {
+              foundPosition = position;
+            }
+          });
+        }
+      }
+
+      setHoveredPosition(foundPosition);
+    };
+
+    const handleMouseLeave = () => {
+      setHoveredPosition(null);
+    };
+
     resizeCanvas();
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseleave', handleMouseLeave);
     window.addEventListener('resize', resizeCanvas);
 
     return () => {
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mouseleave', handleMouseLeave);
       window.removeEventListener('resize', resizeCanvas);
     };
-  }, []);
+  }, [positions, priceData, selectedPair]);
 
   return (
     <div className="relative w-full h-[400px] bg-card">
@@ -506,24 +725,30 @@ const PriceChart: React.FC<PriceChartProps> = ({ selectedPair = 'BTC/USDT' }) =>
       />
 
       {/* Información del precio actual */}
-      {currentPrice > 0 && (
+      {(externalCurrentPrice || currentPrice) > 0 && (
         <div className="absolute top-4 left-4 bg-background/90 backdrop-blur-sm rounded-lg p-3 border">
           <div className="text-sm text-muted-foreground">{selectedPair}</div>
           <div className="text-lg font-bold">
-            ${currentPrice.toFixed(selectedPair === 'ADA/USDT' ? 4 : 2)}
+            ${(externalCurrentPrice || currentPrice).toFixed(selectedPair === 'ADA/USDT' ? 4 : 2)}
           </div>
           <div className="text-xs text-green-600">● En vivo</div>
+          {positions.filter((p: Position) => p.status === 'open' && p.pair === selectedPair).length > 0 && (
+            <div className="text-xs text-blue-600 mt-1">
+              {positions.filter((p: Position) => p.status === 'open' && p.pair === selectedPair).length} posición(es) activa(s)
+            </div>
+          )}
         </div>
       )}
 
       {/* Controles del gráfico */}
-      <div className="absolute top-4 right-4 flex gap-2">
-        <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2 border">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="w-3 h-0.5 bg-blue-500"></div>
-            <span>Precio</span>
+      <div className="absolute top-4 right-4 flex flex-col gap-2">
+        <div className="flex gap-2">
+          <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2 border">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="w-3 h-0.5 bg-blue-500"></div>
+              <span>Precio</span>
+            </div>
           </div>
-        </div>
         {priceData.length > 0 && (
           <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2 border">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -550,7 +775,75 @@ const PriceChart: React.FC<PriceChartProps> = ({ selectedPair = 'BTC/USDT' }) =>
             </div>
           </div>
         )}
+        </div>
+        
+        {/* Leyenda de operaciones */}
+        {positions && positions.some((p: Position) => p.pair === selectedPair) && (
+          <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2 border">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-green-500"></div>
+                <span>Long</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[6px] border-l-transparent border-r-transparent border-t-red-500"></div>
+                <span>Short</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="w-3 h-0.5 bg-red-600" style={{borderStyle: 'dashed', borderWidth: '1px 0'}}></div>
+                <span>SL/TP</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Tooltip para posiciones */}
+      {hoveredPosition && (
+        <div 
+          className="fixed z-50 bg-background/95 backdrop-blur-sm border rounded-lg p-3 shadow-lg pointer-events-none"
+          style={{
+            left: mousePos.x + 10,
+            top: mousePos.y - 10,
+            transform: 'translateY(-100%)'
+          }}
+        >
+          <div className="space-y-1 text-sm">
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded ${hoveredPosition.type === 'long' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <span className="font-semibold">
+                {hoveredPosition.type.toUpperCase()} {hoveredPosition.size} {hoveredPosition.pair}
+              </span>
+            </div>
+            <div className="text-muted-foreground">
+              Entrada: ${hoveredPosition.entryPrice.toFixed(selectedPair === 'ADA/USDT' ? 4 : 2)}
+            </div>
+            {hoveredPosition.leverage > 1 && (
+              <div className="text-orange-600">
+                Apalancamiento: {hoveredPosition.leverage}x
+              </div>
+            )}
+            {hoveredPosition.stopLoss && (
+              <div className="text-red-600">
+                Stop Loss: ${hoveredPosition.stopLoss.toFixed(selectedPair === 'ADA/USDT' ? 4 : 2)}
+              </div>
+            )}
+            {hoveredPosition.takeProfit && (
+              <div className="text-green-600">
+                Take Profit: ${hoveredPosition.takeProfit.toFixed(selectedPair === 'ADA/USDT' ? 4 : 2)}
+              </div>
+            )}
+            {hoveredPosition.status === 'open' && (
+              <div className={`font-semibold ${hoveredPosition.unrealizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                P&L: {hoveredPosition.unrealizedPnL >= 0 ? '+' : ''}${hoveredPosition.unrealizedPnL.toFixed(2)}
+              </div>
+            )}
+            <div className="text-xs text-muted-foreground">
+              {hoveredPosition.timestamp.toLocaleString()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

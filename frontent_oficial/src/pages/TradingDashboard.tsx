@@ -443,7 +443,11 @@ export function TradingDashboard() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <PriceChart selectedPair={selectedPair} />
+              <PriceChart 
+                selectedPair={selectedPair} 
+                positions={positions}
+                currentPrice={currentPrice}
+              />
             </CardContent>
           </Card>
         </div>
