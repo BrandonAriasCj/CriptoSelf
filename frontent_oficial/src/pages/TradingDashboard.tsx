@@ -1,36 +1,325 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import PriceChart from '../components/PriceChart';
 import { TradingPanel } from '../components/TradingPanel';
 import { OrderBook } from '../components/OrderBook';
-import { BacktestingDemo } from '../components/BacktestingDemo';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { TrendingUp, TrendingDown, Activity, Zap, BarChart3, DollarSign } from 'lucide-react';
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  Activity, 
+  Zap, 
+  BarChart3, 
+  DollarSign,
+  Play,
+  Pause,
+  RotateCcw,
+  Target,
+  Wallet,
+  TrendingUpDown,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Flame,
+  Trophy,
+  Brain,
+  Shield
+} from 'lucide-react';
 
 const marketData = {
-  'BTC/USDT': { price: 55550.75, change: 2.45, volume: '1.2B', marketCap: '845B', volatility: 3.2 },
-  'ETH/USDT': { price: 2645.32, change: -1.23, volume: '850M', marketCap: '318B', volatility: 4.1 },
-  'ADA/USDT': { price: 0.4521, change: 5.67, volume: '320M', marketCap: '16B', volatility: 6.8 },
-  'SOL/USDT': { price: 98.45, change: 3.21, volume: '180M', marketCap: '42B', volatility: 7.2 },
+  'BTC/USDT': { price: 97777.53, change: 2.45, volume: '1.2B', marketCap: '1.9T', volatility: 3.2 },
+  'ETH/USDT': { price: 3645.32, change: -1.23, volume: '850M', marketCap: '438B', volatility: 4.1 },
+  'ADA/USDT': { price: 0.8521, change: 5.67, volume: '320M', marketCap: '30B', volatility: 6.8 },
+  'SOL/USDT': { price: 198.45, change: 3.21, volume: '180M', marketCap: '92B', volatility: 7.2 },
 };
+
+interface Position {
+  id: string;
+  type: 'long' | 'short';
+  pair: string;
+  size: number;
+  entryPrice: number;
+  leverage: number;
+  margin: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  timestamp: Date;
+  status: 'open' | 'closed';
+  pnl: number;
+  unrealizedPnL: number;
+}
+
+interface Order {
+  id: string;
+  type: 'market' | 'limit' | 'stop';
+  side: 'buy' | 'sell';
+  pair: string;
+  size: number;
+  price?: number;
+  stopPrice?: number;
+  leverage: number;
+  timestamp: Date;
+  status: 'pending' | 'filled' | 'cancelled' | 'rejected';
+}
+
+interface TradingAccount {
+  balance: number;
+  initialBalance: number;
+  equity: number;
+  margin: number;
+  freeMargin: number;
+  marginLevel: number;
+  totalPnL: number;
+  unrealizedPnL: number;
+  realizedPnL: number;
+}
 
 export function TradingDashboard() {
   const [selectedPair, setSelectedPair] = useState('BTC/USDT');
   const [currentPrice, setCurrentPrice] = useState(marketData[selectedPair].price);
+  const [priceHistory, setPriceHistory] = useState<number[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [account, setAccount] = useState<TradingAccount>({
+    balance: 10000,
+    initialBalance: 10000,
+    equity: 10000,
+    margin: 0,
+    freeMargin: 10000,
+    marginLevel: 0,
+    totalPnL: 0,
+    unrealizedPnL: 0,
+    realizedPnL: 0
+  });
+  
+  // Trading form state
+  const [orderType, setOrderType] = useState<'market' | 'limit' | 'stop'>('market');
+  const [orderSide, setOrderSide] = useState<'buy' | 'sell'>('buy');
+  const [orderSize, setOrderSize] = useState<number>(0.01);
+  const [orderPrice, setOrderPrice] = useState<number>(currentPrice);
+  const [leverage, setLeverage] = useState<number>(1);
+  const [stopLoss, setStopLoss] = useState<number | undefined>();
+  const [takeProfit, setTakeProfit] = useState<number | undefined>();
+  
+  const [notifications, setNotifications] = useState<Array<{id: string, type: 'success' | 'error' | 'warning', message: string}>>([]);
+  const wsRef = useRef<WebSocket | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
 
-  // Simulate price updates
+  // WebSocket connection for real-time data
   useEffect(() => {
-    const interval = setInterval(() => {
-      const basePrice = marketData[selectedPair].price;
-      const variation = (Math.random() - 0.5) * (basePrice * 0.001);
-      setCurrentPrice((prev: number) => prev + variation);
-    }, 2000);
+    const connectWebSocket = () => {
+      setConnectionStatus('connecting');
+      // Simular WebSocket con datos reales
+      const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@ticker');
+      
+      ws.onopen = () => {
+        setConnectionStatus('connected');
+        addNotification('success', '🟢 Conectado al feed en tiempo real');
+      };
 
-    return () => clearInterval(interval);
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.c) { // current price
+            const newPrice = parseFloat(data.c);
+            setCurrentPrice(newPrice);
+            setPriceHistory(prev => [...prev.slice(-99), newPrice]);
+            updatePositionsPnL(newPrice);
+          }
+        } catch (error) {
+          console.error('Error parsing WebSocket data:', error);
+        }
+      };
+
+      ws.onerror = () => {
+        setConnectionStatus('disconnected');
+        addNotification('error', '🔴 Error de conexión');
+      };
+
+      ws.onclose = () => {
+        setConnectionStatus('disconnected');
+        setTimeout(connectWebSocket, 5000);
+      };
+
+      wsRef.current = ws;
+    };
+
+    // Fallback: simulate price updates
+    const simulatePrice = () => {
+      const interval = setInterval(() => {
+        const basePrice = marketData[selectedPair].price;
+        const variation = (Math.random() - 0.5) * (basePrice * 0.002);
+        const newPrice = basePrice + variation;
+        setCurrentPrice(newPrice);
+        setPriceHistory(prev => [...prev.slice(-99), newPrice]);
+        updatePositionsPnL(newPrice);
+      }, 1000);
+
+      return interval;
+    };
+
+    if (selectedPair === 'BTC/USDT') {
+      connectWebSocket();
+    } else {
+      const interval = simulatePrice();
+      return () => clearInterval(interval);
+    }
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
   }, [selectedPair]);
 
-  const priceChange = ((currentPrice - marketData[selectedPair].price) / marketData[selectedPair].price) * 100;
+  // Update positions P&L in real-time
+  const updatePositionsPnL = (price: number) => {
+    setPositions(prev => prev.map(position => {
+      if (position.status === 'open' && position.pair === selectedPair) {
+        const priceDiff = position.type === 'long' 
+          ? price - position.entryPrice 
+          : position.entryPrice - price;
+        
+        const unrealizedPnL = (priceDiff * position.size * position.leverage);
+        
+        return {
+          ...position,
+          unrealizedPnL
+        };
+      }
+      return position;
+    }));
+
+    // Update account equity
+    const totalUnrealizedPnL = positions
+      .filter(p => p.status === 'open')
+      .reduce((sum, p) => sum + p.unrealizedPnL, 0);
+    
+    setAccount(prev => ({
+      ...prev,
+      unrealizedPnL: totalUnrealizedPnL,
+      equity: prev.balance + totalUnrealizedPnL
+    }));
+  };
+
+  // Execute manual trade
+  const executeOrder = () => {
+    // Validation
+    if (orderSize <= 0) {
+      addNotification('error', '❌ Tamaño de orden inválido');
+      return;
+    }
+
+    const requiredMargin = (orderSize * currentPrice) / leverage;
+    if (requiredMargin > account.freeMargin) {
+      addNotification('error', '❌ Margen insuficiente');
+      return;
+    }
+
+    // Create position
+    const position: Position = {
+      id: `pos_${Date.now()}`,
+      type: orderSide === 'buy' ? 'long' : 'short',
+      pair: selectedPair,
+      size: orderSize,
+      entryPrice: orderType === 'market' ? currentPrice : orderPrice,
+      leverage,
+      margin: requiredMargin,
+      stopLoss,
+      takeProfit,
+      timestamp: new Date(),
+      status: 'open',
+      pnl: 0,
+      unrealizedPnL: 0
+    };
+
+    setPositions(prev => [...prev, position]);
+    
+    // Update account
+    setAccount(prev => ({
+      ...prev,
+      margin: prev.margin + requiredMargin,
+      freeMargin: prev.freeMargin - requiredMargin
+    }));
+
+    const leverageText = leverage > 1 ? ` (${leverage}x)` : '';
+    addNotification('success', 
+      `✅ ${position.type.toUpperCase()} ${orderSize} ${selectedPair}${leverageText} @ $${position.entryPrice.toFixed(2)}`
+    );
+
+    // Reset form
+    setOrderSize(0.01);
+    setStopLoss(undefined);
+    setTakeProfit(undefined);
+  };
+
+  // Close position
+  const closePosition = (positionId: string) => {
+    const position = positions.find(p => p.id === positionId);
+    if (!position || position.status === 'closed') return;
+
+    const priceDiff = position.type === 'long' 
+      ? currentPrice - position.entryPrice 
+      : position.entryPrice - currentPrice;
+    
+    const realizedPnL = (priceDiff * position.size * position.leverage);
+
+    setPositions(prev => prev.map(p => 
+      p.id === positionId 
+        ? { ...p, status: 'closed' as const, pnl: realizedPnL, unrealizedPnL: 0 }
+        : p
+    ));
+
+    // Update account
+    setAccount(prev => ({
+      ...prev,
+      balance: prev.balance + realizedPnL,
+      margin: prev.margin - position.margin,
+      freeMargin: prev.freeMargin + position.margin,
+      realizedPnL: prev.realizedPnL + realizedPnL,
+      totalPnL: prev.totalPnL + realizedPnL
+    }));
+
+    const emoji = realizedPnL > 0 ? '💰' : '📉';
+    addNotification(
+      realizedPnL > 0 ? 'success' : 'error',
+      `${emoji} Posición cerrada - P&L: $${realizedPnL.toFixed(2)}`
+    );
+  };
+
+  const addNotification = (type: 'success' | 'error' | 'warning', message: string) => {
+    const id = Date.now().toString();
+    setNotifications(prev => [...prev, { id, type, message }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  };
+
+  const resetAccount = () => {
+    setAccount({
+      balance: 10000,
+      initialBalance: 10000,
+      equity: 10000,
+      margin: 0,
+      freeMargin: 10000,
+      marginLevel: 0,
+      totalPnL: 0,
+      unrealizedPnL: 0,
+      realizedPnL: 0
+    });
+    setPositions([]);
+    setOrders([]);
+    addNotification('success', '🔄 Cuenta reiniciada');
+  };
+
+  // Calculate margin level
+  const marginLevel = account.margin > 0 ? (account.equity / account.margin) * 100 : 0;
+
+  const priceChange = priceHistory.length >= 2 
+    ? ((currentPrice - priceHistory[priceHistory.length - 2]) / priceHistory[priceHistory.length - 2]) * 100
+    : ((currentPrice - marketData[selectedPair].price) / marketData[selectedPair].price) * 100;
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
@@ -158,9 +447,449 @@ export function TradingDashboard() {
             </CardContent>
           </Card>
         </div>
-        {/* Backtesting Demo Section */}
-        <div className="xl:col-span-4">
-          <BacktestingDemo />
+        {/* Manual Trading Simulator */}
+        <div className="xl:col-span-4 space-y-6">
+          {/* Trading Panel */}
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200/50 dark:border-blue-800/50">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <Target className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Simulador de Trading Manual</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Trading con apalancamiento, SL/TP y gestión de riesgo
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge 
+                    variant={connectionStatus === 'connected' ? 'default' : 'destructive'}
+                    className={connectionStatus === 'connected' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : ''}
+                  >
+                    {connectionStatus === 'connected' ? '🟢 En Vivo' : 
+                     connectionStatus === 'connecting' ? '🟡 Conectando...' : '🔴 Desconectado'}
+                  </Badge>
+                  <Button onClick={resetAccount} variant="outline">
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Reset
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Order Form */}
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Button
+                      variant={orderSide === 'buy' ? 'default' : 'outline'}
+                      onClick={() => setOrderSide('buy')}
+                      className={orderSide === 'buy' ? 'bg-green-600 hover:bg-green-700' : ''}
+                    >
+                      BUY / LONG
+                    </Button>
+                    <Button
+                      variant={orderSide === 'sell' ? 'default' : 'outline'}
+                      onClick={() => setOrderSide('sell')}
+                      className={orderSide === 'sell' ? 'bg-red-600 hover:bg-red-700' : ''}
+                    >
+                      SELL / SHORT
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['market', 'limit', 'stop'] as const).map((type) => (
+                      <Button
+                        key={type}
+                        variant={orderType === type ? 'default' : 'outline'}
+                        onClick={() => setOrderType(type)}
+                        size="sm"
+                      >
+                        {type.toUpperCase()}
+                      </Button>
+                    ))}
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Tamaño</label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      value={orderSize}
+                      onChange={(e) => setOrderSize(Number(e.target.value))}
+                      className="w-full mt-1 p-2 border rounded-lg"
+                      placeholder="0.01"
+                    />
+                  </div>
+
+                  {orderType !== 'market' && (
+                    <div>
+                      <label className="text-sm font-medium">Precio</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={orderPrice}
+                        onChange={(e) => setOrderPrice(Number(e.target.value))}
+                        className="w-full mt-1 p-2 border rounded-lg"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-sm font-medium">Apalancamiento: {leverage}x</label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="100"
+                      value={leverage}
+                      onChange={(e) => setLeverage(Number(e.target.value))}
+                      className="w-full mt-1"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>1x</span>
+                      <span>100x</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-medium">Stop Loss</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={stopLoss || ''}
+                        onChange={(e) => setStopLoss(e.target.value ? Number(e.target.value) : undefined)}
+                        className="w-full mt-1 p-2 border rounded-lg"
+                        placeholder="Opcional"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Take Profit</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={takeProfit || ''}
+                        onChange={(e) => setTakeProfit(e.target.value ? Number(e.target.value) : undefined)}
+                        className="w-full mt-1 p-2 border rounded-lg"
+                        placeholder="Opcional"
+                      />
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={executeOrder}
+                    className={`w-full ${orderSide === 'buy' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+                  >
+                    {orderSide === 'buy' ? 'COMPRAR' : 'VENDER'} {selectedPair}
+                  </Button>
+                </div>
+
+                {/* Order Info */}
+                <div className="space-y-4">
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <h4 className="font-medium mb-3">Información de la Orden</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Precio actual:</span>
+                        <span className="font-mono">${currentPrice.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Tamaño:</span>
+                        <span className="font-mono">{orderSize} {selectedPair.split('/')[0]}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Valor nocional:</span>
+                        <span className="font-mono">${(orderSize * currentPrice).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Margen requerido:</span>
+                        <span className="font-mono">${((orderSize * currentPrice) / leverage).toFixed(2)}</span>
+                      </div>
+                      {leverage > 1 && (
+                        <div className="flex justify-between text-orange-600">
+                          <span>Apalancamiento:</span>
+                          <span className="font-mono">{leverage}x</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <h4 className="font-medium mb-3">Gestión de Riesgo</h4>
+                    <div className="space-y-2 text-sm">
+                      {stopLoss && (
+                        <div className="flex justify-between text-red-600">
+                          <span>Stop Loss:</span>
+                          <span className="font-mono">${stopLoss.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {takeProfit && (
+                        <div className="flex justify-between text-green-600">
+                          <span>Take Profit:</span>
+                          <span className="font-mono">${takeProfit.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {stopLoss && takeProfit && (
+                        <div className="flex justify-between">
+                          <span>Risk/Reward:</span>
+                          <span className="font-mono">
+                            1:{((Math.abs(takeProfit - currentPrice)) / Math.abs(stopLoss - currentPrice)).toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Account Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <Wallet className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-green-700 dark:text-green-300">Balance</p>
+                  <p className="font-bold text-green-900 dark:text-green-100">
+                    ${account.balance.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Equity: ${account.equity.toFixed(2)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Shield className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">Margen</p>
+                  <p className="font-bold text-blue-900 dark:text-blue-100">
+                    ${account.margin.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Libre: ${account.freeMargin.toFixed(2)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className={`bg-gradient-to-br ${account.totalPnL >= 0 
+              ? 'from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20' 
+              : 'from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20'}`}>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${account.totalPnL >= 0 
+                  ? 'bg-purple-100 dark:bg-purple-900/30' 
+                  : 'bg-red-100 dark:bg-red-900/30'}`}>
+                  <TrendingUpDown className={`w-5 h-5 ${account.totalPnL >= 0 ? 'text-purple-600' : 'text-red-600'}`} />
+                </div>
+                <div>
+                  <p className={`text-sm ${account.totalPnL >= 0 
+                    ? 'text-purple-700 dark:text-purple-300' 
+                    : 'text-red-700 dark:text-red-300'}`}>
+                    P&L Total
+                  </p>
+                  <p className={`font-bold ${account.totalPnL >= 0 
+                    ? 'text-purple-900 dark:text-purple-100' 
+                    : 'text-red-900 dark:text-red-100'}`}>
+                    {account.totalPnL >= 0 ? '+' : ''}${account.totalPnL.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    No realizado: ${account.unrealizedPnL.toFixed(2)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className={`bg-gradient-to-br ${marginLevel > 200 
+              ? 'from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20'
+              : marginLevel > 100 
+              ? 'from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20'
+              : 'from-red-50 to-pink-50 dark:from-red-950/20 dark:to-pink-950/20'}`}>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${marginLevel > 200 
+                  ? 'bg-green-100 dark:bg-green-900/30'
+                  : marginLevel > 100 
+                  ? 'bg-yellow-100 dark:bg-yellow-900/30'
+                  : 'bg-red-100 dark:bg-red-900/30'}`}>
+                  <AlertTriangle className={`w-5 h-5 ${marginLevel > 200 
+                    ? 'text-green-600'
+                    : marginLevel > 100 
+                    ? 'text-yellow-600'
+                    : 'text-red-600'}`} />
+                </div>
+                <div>
+                  <p className={`text-sm ${marginLevel > 200 
+                    ? 'text-green-700 dark:text-green-300'
+                    : marginLevel > 100 
+                    ? 'text-yellow-700 dark:text-yellow-300'
+                    : 'text-red-700 dark:text-red-300'}`}>
+                    Nivel de Margen
+                  </p>
+                  <p className={`font-bold ${marginLevel > 200 
+                    ? 'text-green-900 dark:text-green-100'
+                    : marginLevel > 100 
+                    ? 'text-yellow-900 dark:text-yellow-100'
+                    : 'text-red-900 dark:text-red-100'}`}>
+                    {marginLevel.toFixed(0)}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {marginLevel > 200 ? 'Seguro' : marginLevel > 100 ? 'Precaución' : 'Peligro'}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Open Positions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="w-5 h-5" />
+                Posiciones Abiertas
+                <Badge variant="outline">{positions.filter(p => p.status === 'open').length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {positions.filter(p => p.status === 'open').length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Target className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No hay posiciones abiertas</p>
+                    <p className="text-sm">Abre una posición para comenzar</p>
+                  </div>
+                ) : (
+                  positions.filter(p => p.status === 'open').map((position) => (
+                    <div key={position.id} className="p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-1 rounded ${position.type === 'long' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+                            {position.type === 'long' ? 
+                              <TrendingUp className="w-4 h-4 text-green-600" /> : 
+                              <TrendingDown className="w-4 h-4 text-red-600" />
+                            }
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">
+                              {position.type.toUpperCase()} {position.size} {position.pair}
+                              {position.leverage > 1 && <span className="text-orange-600"> ({position.leverage}x)</span>}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Entrada: ${position.entryPrice.toFixed(2)} • {position.timestamp.toLocaleTimeString()}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => closePosition(position.id)}
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 hover:bg-red-50"
+                        >
+                          Cerrar
+                        </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 text-xs">
+                        <div>
+                          <p className="text-muted-foreground">P&L No Realizado</p>
+                          <p className={`font-medium ${position.unrealizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {position.unrealizedPnL >= 0 ? '+' : ''}${position.unrealizedPnL.toFixed(2)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Margen Usado</p>
+                          <p className="font-medium">${position.margin.toFixed(2)}</p>
+                        </div>
+                        {position.stopLoss && (
+                          <div>
+                            <p className="text-muted-foreground">Stop Loss</p>
+                            <p className="font-medium text-red-600">${position.stopLoss.toFixed(2)}</p>
+                          </div>
+                        )}
+                        {position.takeProfit && (
+                          <div>
+                            <p className="text-muted-foreground">Take Profit</p>
+                            <p className="font-medium text-green-600">${position.takeProfit.toFixed(2)}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Closed Positions History */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="w-5 h-5" />
+                Historial de Posiciones
+                <Badge variant="outline">{positions.filter(p => p.status === 'closed').length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {positions.filter(p => p.status === 'closed').length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No hay historial aún</p>
+                  </div>
+                ) : (
+                  positions.filter(p => p.status === 'closed').slice(0, 5).map((position) => (
+                    <div key={position.id} className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                      <div className="flex items-center gap-2">
+                        <div className={`p-1 rounded ${position.type === 'long' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+                          {position.type === 'long' ? 
+                            <TrendingUp className="w-3 h-3 text-green-600" /> : 
+                            <TrendingDown className="w-3 h-3 text-red-600" />
+                          }
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium">
+                            {position.type.toUpperCase()} {position.size} {position.pair}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {position.timestamp.toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <p className={`text-xs font-medium ${position.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {position.pnl >= 0 ? '+' : ''}${position.pnl.toFixed(2)}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Live Notifications */}
+          {notifications.length > 0 && (
+            <div className="fixed top-4 right-4 z-50 space-y-2">
+              {notifications.map((notification) => (
+                <Card key={notification.id} className={`w-80 ${
+                  notification.type === 'success' ? 'border-green-500 bg-green-50 dark:bg-green-950/20' :
+                  notification.type === 'error' ? 'border-red-500 bg-red-50 dark:bg-red-950/20' :
+                  'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20'
+                } animate-in slide-in-from-right duration-300`}>
+                  <CardContent className="p-3">
+                    <p className="text-sm font-medium">{notification.message}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Trading Panel & Order Book */}
