@@ -329,16 +329,16 @@ export function TradingDashboard() {
           <Card
             key={pair}
             className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${selectedPair === pair
-              ? 'ring-2 ring-primary shadow-lg bg-gradient-to-br from-primary/5 to-primary/10'
-              : 'hover:shadow-md'
+              ? 'ring-2 ring-primary shadow-lg bg-primary/5 border-primary/20'
+              : 'hover:shadow-md bg-card/50 backdrop-blur-sm'
               }`}
             onClick={() => setSelectedPair(pair)}
           >
             <CardContent className="p-4">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">{pair.split('/')[0].slice(0, 2)}</span>
+                  <div className="w-8 h-8 bg-primary/20 backdrop-blur-sm border border-primary/30 rounded-lg flex items-center justify-center">
+                    <span className="text-primary font-bold text-xs">{pair.split('/')[0].slice(0, 2)}</span>
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm">{pair}</h3>
@@ -347,7 +347,7 @@ export function TradingDashboard() {
                 </div>
                 <Badge
                   variant={data.change >= 0 ? "default" : "destructive"}
-                  className={`text-xs ${data.change >= 0 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : ''}`}
+                  className={`text-xs ${data.change >= 0 ? 'bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/20' : ''}`}
                 >
                   {data.change >= 0 ? '+' : ''}{data.change.toFixed(2)}%
                 </Badge>
@@ -372,12 +372,12 @@ export function TradingDashboard() {
       </div>
 
       {/* Selected Pair Info */}
-      <Card className="bg-gradient-to-r from-card via-card to-muted/20 border-primary/20">
+      <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
         <CardHeader className="pb-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold">{selectedPair.split('/')[0].slice(0, 3)}</span>
+              <div className="w-12 h-12 bg-primary/20 backdrop-blur-sm border border-primary/30 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-primary font-bold">{selectedPair.split('/')[0].slice(0, 3)}</span>
               </div>
               <div>
                 <CardTitle className="flex items-center gap-2 text-xl">
@@ -421,7 +421,7 @@ export function TradingDashboard() {
         {/* Price Chart */}
         <div className="xl:col-span-3">
           <Card className="overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-muted/50 to-transparent">
+            <CardHeader className="bg-muted/30 backdrop-blur-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <CardTitle className="flex items-center gap-2">
                   <Activity className="w-5 h-5 text-primary" />
@@ -450,12 +450,12 @@ export function TradingDashboard() {
         {/* Manual Trading Simulator */}
         <div className="xl:col-span-4 space-y-6">
           {/* Trading Panel */}
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200/50 dark:border-blue-800/50">
+          <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                    <Target className="w-6 h-6 text-blue-600" />
+                  <div className="p-2 bg-primary/10 backdrop-blur-sm rounded-lg">
+                    <Target className="w-6 h-6 text-primary" />
                   </div>
                   <div>
                     <CardTitle className="text-xl">Simulador de Trading Manual</CardTitle>
@@ -467,7 +467,7 @@ export function TradingDashboard() {
                 <div className="flex items-center gap-2">
                   <Badge 
                     variant={connectionStatus === 'connected' ? 'default' : 'destructive'}
-                    className={connectionStatus === 'connected' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : ''}
+                    className={connectionStatus === 'connected' ? 'bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/20' : ''}
                   >
                     {connectionStatus === 'connected' ? '🟢 En Vivo' : 
                      connectionStatus === 'connecting' ? '🟡 Conectando...' : '🔴 Desconectado'}
@@ -589,7 +589,7 @@ export function TradingDashboard() {
 
                 {/* Order Info */}
                 <div className="space-y-4">
-                  <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="p-4 bg-muted/30 backdrop-blur-sm rounded-lg border border-border/50">
                     <h4 className="font-medium mb-3">Información de la Orden</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
@@ -617,7 +617,7 @@ export function TradingDashboard() {
                     </div>
                   </div>
 
-                  <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="p-4 bg-muted/30 backdrop-blur-sm rounded-lg border border-border/50">
                     <h4 className="font-medium mb-3">Gestión de Riesgo</h4>
                     <div className="space-y-2 text-sm">
                       {stopLoss && (
@@ -649,14 +649,14 @@ export function TradingDashboard() {
 
           {/* Account Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
+            <Card className="bg-card/50 backdrop-blur-sm border-green-500/20">
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                  <Wallet className="w-5 h-5 text-green-600" />
+                <div className="p-2 bg-green-500/10 backdrop-blur-sm rounded-lg">
+                  <Wallet className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
                   <p className="text-sm text-green-700 dark:text-green-300">Balance</p>
-                  <p className="font-bold text-green-900 dark:text-green-100">
+                  <p className="font-bold text-foreground">
                     ${account.balance.toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -666,14 +666,14 @@ export function TradingDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+            <Card className="bg-card/50 backdrop-blur-sm border-blue-500/20">
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <Shield className="w-5 h-5 text-blue-600" />
+                <div className="p-2 bg-blue-500/10 backdrop-blur-sm rounded-lg">
+                  <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
                   <p className="text-sm text-blue-700 dark:text-blue-300">Margen</p>
-                  <p className="font-bold text-blue-900 dark:text-blue-100">
+                  <p className="font-bold text-foreground">
                     ${account.margin.toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -683,14 +683,14 @@ export function TradingDashboard() {
               </CardContent>
             </Card>
 
-            <Card className={`bg-gradient-to-br ${account.totalPnL >= 0 
-              ? 'from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20' 
-              : 'from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20'}`}>
+            <Card className={`bg-card/50 backdrop-blur-sm ${account.totalPnL >= 0 
+              ? 'border-purple-500/20' 
+              : 'border-red-500/20'}`}>
               <CardContent className="p-4 flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${account.totalPnL >= 0 
-                  ? 'bg-purple-100 dark:bg-purple-900/30' 
-                  : 'bg-red-100 dark:bg-red-900/30'}`}>
-                  <TrendingUpDown className={`w-5 h-5 ${account.totalPnL >= 0 ? 'text-purple-600' : 'text-red-600'}`} />
+                <div className={`p-2 rounded-lg backdrop-blur-sm ${account.totalPnL >= 0 
+                  ? 'bg-purple-500/10' 
+                  : 'bg-red-500/10'}`}>
+                  <TrendingUpDown className={`w-5 h-5 ${account.totalPnL >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400'}`} />
                 </div>
                 <div>
                   <p className={`text-sm ${account.totalPnL >= 0 
@@ -699,8 +699,8 @@ export function TradingDashboard() {
                     P&L Total
                   </p>
                   <p className={`font-bold ${account.totalPnL >= 0 
-                    ? 'text-purple-900 dark:text-purple-100' 
-                    : 'text-red-900 dark:text-red-100'}`}>
+                    ? 'text-purple-700 dark:text-purple-300' 
+                    : 'text-red-700 dark:text-red-300'}`}>
                     {account.totalPnL >= 0 ? '+' : ''}${account.totalPnL.toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -710,22 +710,22 @@ export function TradingDashboard() {
               </CardContent>
             </Card>
 
-            <Card className={`bg-gradient-to-br ${marginLevel > 200 
-              ? 'from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20'
+            <Card className={`bg-card/50 backdrop-blur-sm ${marginLevel > 200 
+              ? 'border-green-500/20'
               : marginLevel > 100 
-              ? 'from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20'
-              : 'from-red-50 to-pink-50 dark:from-red-950/20 dark:to-pink-950/20'}`}>
+              ? 'border-yellow-500/20'
+              : 'border-red-500/20'}`}>
               <CardContent className="p-4 flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${marginLevel > 200 
-                  ? 'bg-green-100 dark:bg-green-900/30'
+                <div className={`p-2 rounded-lg backdrop-blur-sm ${marginLevel > 200 
+                  ? 'bg-green-500/10'
                   : marginLevel > 100 
-                  ? 'bg-yellow-100 dark:bg-yellow-900/30'
-                  : 'bg-red-100 dark:bg-red-900/30'}`}>
+                  ? 'bg-yellow-500/10'
+                  : 'bg-red-500/10'}`}>
                   <AlertTriangle className={`w-5 h-5 ${marginLevel > 200 
-                    ? 'text-green-600'
+                    ? 'text-green-600 dark:text-green-400'
                     : marginLevel > 100 
-                    ? 'text-yellow-600'
-                    : 'text-red-600'}`} />
+                    ? 'text-yellow-600 dark:text-yellow-400'
+                    : 'text-red-600 dark:text-red-400'}`} />
                 </div>
                 <div>
                   <p className={`text-sm ${marginLevel > 200 
@@ -736,10 +736,10 @@ export function TradingDashboard() {
                     Nivel de Margen
                   </p>
                   <p className={`font-bold ${marginLevel > 200 
-                    ? 'text-green-900 dark:text-green-100'
+                    ? 'text-green-700 dark:text-green-300'
                     : marginLevel > 100 
-                    ? 'text-yellow-900 dark:text-yellow-100'
-                    : 'text-red-900 dark:text-red-100'}`}>
+                    ? 'text-yellow-700 dark:text-yellow-300'
+                    : 'text-red-700 dark:text-red-300'}`}>
                     {marginLevel.toFixed(0)}%
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -769,13 +769,13 @@ export function TradingDashboard() {
                   </div>
                 ) : (
                   positions.filter(p => p.status === 'open').map((position) => (
-                    <div key={position.id} className="p-3 bg-muted/50 rounded-lg">
+                    <div key={position.id} className="p-3 bg-muted/30 backdrop-blur-sm rounded-lg border border-border/50">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <div className={`p-1 rounded ${position.type === 'long' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+                          <div className={`p-1 rounded backdrop-blur-sm ${position.type === 'long' ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
                             {position.type === 'long' ? 
-                              <TrendingUp className="w-4 h-4 text-green-600" /> : 
-                              <TrendingDown className="w-4 h-4 text-red-600" />
+                              <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" /> : 
+                              <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />
                             }
                           </div>
                           <div>
@@ -847,12 +847,12 @@ export function TradingDashboard() {
                   </div>
                 ) : (
                   positions.filter(p => p.status === 'closed').slice(0, 5).map((position) => (
-                    <div key={position.id} className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                    <div key={position.id} className="flex items-center justify-between p-2 bg-muted/20 backdrop-blur-sm rounded border border-border/30">
                       <div className="flex items-center gap-2">
-                        <div className={`p-1 rounded ${position.type === 'long' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+                        <div className={`p-1 rounded backdrop-blur-sm ${position.type === 'long' ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
                           {position.type === 'long' ? 
-                            <TrendingUp className="w-3 h-3 text-green-600" /> : 
-                            <TrendingDown className="w-3 h-3 text-red-600" />
+                            <TrendingUp className="w-3 h-3 text-green-600 dark:text-green-400" /> : 
+                            <TrendingDown className="w-3 h-3 text-red-600 dark:text-red-400" />
                           }
                         </div>
                         <div>
@@ -903,40 +903,40 @@ export function TradingDashboard() {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200/50 dark:border-blue-800/50">
+        <Card className="bg-card/50 backdrop-blur-sm border-blue-500/20">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <DollarSign className="w-5 h-5 text-blue-600" />
+            <div className="p-2 bg-blue-500/10 backdrop-blur-sm rounded-lg">
+              <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <p className="text-sm text-blue-700 dark:text-blue-300">Volumen 24h</p>
-              <p className="font-bold text-blue-900 dark:text-blue-100">{marketData[selectedPair].volume}</p>
+              <p className="font-bold text-foreground">{marketData[selectedPair].volume}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200/50 dark:border-green-800/50">
+        <Card className="bg-card/50 backdrop-blur-sm border-green-500/20">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-green-600" />
+            <div className="p-2 bg-green-500/10 backdrop-blur-sm rounded-lg">
+              <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
               <p className="text-sm text-green-700 dark:text-green-300">Máximo 24h</p>
-              <p className="font-bold text-green-900 dark:text-green-100">
+              <p className="font-bold text-foreground">
                 ${(currentPrice * 1.045).toFixed(2)}
               </p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200/50 dark:border-purple-800/50">
+        <Card className="bg-card/50 backdrop-blur-sm border-purple-500/20">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-              <Activity className="w-5 h-5 text-purple-600" />
+            <div className="p-2 bg-purple-500/10 backdrop-blur-sm rounded-lg">
+              <Activity className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
               <p className="text-sm text-purple-700 dark:text-purple-300">Volatilidad</p>
-              <p className="font-bold text-purple-900 dark:text-purple-100">
+              <p className="font-bold text-foreground">
                 {marketData[selectedPair].volatility}%
               </p>
             </div>
