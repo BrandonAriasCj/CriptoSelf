@@ -45,7 +45,7 @@ export const LogoutConfirmation: React.FC<LogoutConfirmationProps> = ({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onClose}>
-            Cancelar
+            Cancelarasdfasf
           </AlertDialogCancel>
           <AlertDialogAction 
             onClick={onConfirm}

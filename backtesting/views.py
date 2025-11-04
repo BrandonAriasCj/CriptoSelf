@@ -9,15 +9,18 @@ import io
 import sys
 from contextlib import redirect_stdout
 from .demo import ScalpingStrategy, PatronVela, get_ccxt_data
+from .custom_strategy import CustomScalpingStrategy
 import datetime
 import ccxt
 import pandas as pd
 
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.decorators import permission_classes
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def run_backtesting_demo(request):
     """
     Ejecuta el demo de backtesting y retorna los resultados
@@ -59,36 +62,73 @@ def run_backtesting_demo(request):
             data = cerebro.datas[0]
             estrategia = cerebro.runstrats[0][0]
 
+            # Extraer datos correctamente de las líneas de Backtrader
             fechas = [bt.num2date(x) for x in data.lines.datetime.array]
-            precios = list(data.close)
-            indi = list(estrategia.patronVela1)
-            volma = list(estrategia.vol_ma)
+            precios = list(data.lines.close.array)  # Usar .array para obtener todos los valores
+            indi = list(estrategia.patronVela1.lines.status.array)  # Usar la línea status del indicador
+            volma = list(estrategia.vol_ma.lines.sma.array)  # Usar la línea sma del indicador vol_ma
             historico_vol_max = list(estrategia.vol_ma_values)
             datas_close_list = list(estrategia.datas_close)
+            
+            # Debug: Imprimir información sobre los datos extraídos
+            print(f"DEBUG - Fechas extraídas: {len(fechas)}")
+            print(f"DEBUG - Precios extraídos: {len(precios)}")
+            print(f"DEBUG - Primeros 3 precios: {precios[:3] if len(precios) > 3 else precios}")
+            print(f"DEBUG - Últimos 3 precios: {precios[-3:] if len(precios) > 3 else precios}")
+            print(f"DEBUG - Indicadores extraídos: {len(indi)}")
+            print(f"DEBUG - Volumen MA extraído: {len(volma)}")
 
+            # Convertir NaN a None para JSON válido
+            import math
+            indi_clean = [None if (isinstance(x, float) and math.isnan(x)) else x for x in indi]
+            volma_clean = [None if (isinstance(x, float) and math.isnan(x)) else x for x in volma]
+            precios_clean = [None if (isinstance(x, float) and math.isnan(x)) else x for x in precios]
 
+            print(f"DEBUG - Precios después de limpiar: {len(precios_clean)}")
+            print(f"DEBUG - Primeros 3 precios limpios: {precios_clean[:3] if len(precios_clean) > 3 else precios_clean}")
 
-            #capital_final = cerebro.broker.getvalue()
-            #print(f"Capital final: {capital_final:.2f}")
-            #print(f"Cerradas Totales: {instancia.cnt}")
-            #print(f"Ganadas: {instancia.ganadas}")
-            #print(f"Perdidas: {instancia.perdidas}")
-            #print(f"Velas negativas: {instancia.vNegativas}")
+            capital_final = cerebro.broker.getvalue()
+            print(f"Capital final: {capital_final:.2f}")
+            print(f"Cerradas Totales: {instancia.cnt}")
+            print(f"Ganadas: {instancia.ganadas}")
+            print(f"Perdidas: {instancia.perdidas}")
+            print(f"Velas negativas: {instancia.vNegativas}")
 
         # Obtener la salida capturada
         output_text = output_buffer.getvalue()
         
         # Preparar respuesta estructurada
 
-        
-        return JsonResponse({
+        # Calcular métricas de rendimiento
+        ganancia_perdida = capital_final - capital_inicial
+        rentabilidad_porcentaje = ((capital_final - capital_inicial) / capital_inicial) * 100 if capital_inicial > 0 else 0
+        tasa_acierto = (instancia.ganadas / instancia.cnt * 100) if instancia.cnt > 0 else 0
+
+        respuesta_json = JsonResponse({
                 "fechas": [f.strftime("%Y-%m-%d %H:%M:%S") for f in fechas],
-                "precio": precios,
-                "patronVela": indi,
-                "volma": volma,
+                "precio": precios_clean,
+                "patronVela": indi_clean,
+                "volma": volma_clean,
                 "historial": historico_vol_max,
                 "datas closed": datas_close_list,
+                # Agregar resumen de resultados
+                "resumen": {
+                    "capital_inicial": capital_inicial,
+                    "capital_final": capital_final,
+                    "ganancia_perdida": ganancia_perdida,
+                    "rentabilidad_porcentaje": rentabilidad_porcentaje,
+                    "operaciones_totales": instancia.cnt,
+                    "operaciones_ganadas": instancia.ganadas,
+                    "operaciones_perdidas": instancia.perdidas,
+                    "tasa_acierto": tasa_acierto,
+                    "racha_perdidas": getattr(instancia, 'loss_streak', 0),
+                    "velas_negativas": getattr(instancia, 'vNegativas', 0)
+                }
          })
+        
+        data = respuesta_json
+        print("data: ", data.content)
+        return respuesta_json
         #return Response(resultado, status=status.HTTP_200_OK)
         
     except Exception as e:
@@ -100,6 +140,7 @@ def run_backtesting_demo(request):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def run_custom_backtesting(request):
     """
     Ejecuta backtesting con parámetros personalizados
@@ -111,7 +152,19 @@ def run_custom_backtesting(request):
         timeframe = data.get('timeframe', '5m')
         fecha_inicio = data.get('fecha_inicio', '2025-01-01')
         fecha_fin = data.get('fecha_fin', '2025-09-05')
-        capital_inicial = data.get('capital_inicial', 100)
+        capital_inicial = data.get('capital_inicial', 1000)
+        
+        # Parámetros de estrategia
+        ema_fast = data.get('ema_fast', 9)
+        ema_slow = data.get('ema_slow', 21)
+        rsi_period = data.get('rsi_period', 14)
+        stop_loss_mult = data.get('stop_loss_mult', 2.0)
+        take_profit_mult = data.get('take_profit_mult', 4.0)
+        risk_per_trade = data.get('risk_per_trade', 0.02)
+        min_volume = data.get('min_volume', 5)
+        adx_threshold = data.get('adx_threshold', 25)
+        bollinger_period = data.get('bollinger_period', 20)
+        atr_period = data.get('atr_period', 14)
         
         # Validar fechas
         try:
@@ -129,7 +182,21 @@ def run_custom_backtesting(request):
         with redirect_stdout(output_buffer):
             # Crear instancia de cerebro
             cerebro = bt.Cerebro()
-            cerebro.addstrategy(ScalpingStrategy)
+            
+            # Usar estrategia personalizada con parámetros
+            cerebro.addstrategy(
+                CustomScalpingStrategy,
+                ema_fast=ema_fast,
+                ema_slow=ema_slow,
+                rsi_period=rsi_period,
+                stop_loss_mult=stop_loss_mult,
+                take_profit_mult=take_profit_mult,
+                risk_per_trade=risk_per_trade,
+                min_volume=min_volume,
+                adx_threshold=adx_threshold,
+                bollinger_period=bollinger_period,
+                atr_period=atr_period
+            )
             cerebro.addindicator(PatronVela)
 
             # Generar datos
@@ -157,19 +224,19 @@ def run_custom_backtesting(request):
             data = cerebro.datas[0]
             estrategia = cerebro.runstrats[0][0]
 
+            # Extraer datos correctamente de las líneas de Backtrader
             fechas = [bt.num2date(x) for x in data.lines.datetime.array]
-            precios = list(data.close)
-            sma = list(estrategia.sma)
-            ema = list(estrategia.ema)
-            rsi = list(estrategia.rsi)
-
-            return JsonResponse({
-                "fechas": [f.strftime("%Y-%m-%d %H:%M:%S") for f in fechas],
-                "precio": precios,
-                "sma": sma,
-                "ema": ema,
-                "rsi": rsi,
-            })
+            precios = list(data.lines.close.array)
+            indi = list(estrategia.patronVela1.lines.status.array)
+            volma = list(estrategia.vol_ma.lines.sma.array)
+            historico_vol_max = list(estrategia.vol_ma_values)
+            datas_close_list = list(estrategia.datas_close)
+            
+            # Convertir NaN a None para JSON válido
+            import math
+            indi_clean = [None if (isinstance(x, float) and math.isnan(x)) else x for x in indi]
+            volma_clean = [None if (isinstance(x, float) and math.isnan(x)) else x for x in volma]
+            precios_clean = [None if (isinstance(x, float) and math.isnan(x)) else x for x in precios]
 
 
             capital_final = cerebro.broker.getvalue()
@@ -181,28 +248,47 @@ def run_custom_backtesting(request):
         # Obtener la salida capturada
         output_text = output_buffer.getvalue()
         
-        # Preparar respuesta estructurada
-        resultado = {
-            'status': 'success',
-            'capital_inicial': capital_inicial_real,
-            'capital_final': capital_final,
-            'ganancia_perdida': capital_final - capital_inicial_real,
-            'rentabilidad_porcentaje': ((capital_final - capital_inicial_real) / capital_inicial_real) * 100,
-            'operaciones_totales': instancia.cnt,
-            'operaciones_ganadas': instancia.ganadas,
-            'operaciones_perdidas': instancia.perdidas,
-            'tasa_acierto': (instancia.ganadas / instancia.cnt * 100) if instancia.cnt > 0 else 0,
-            'output_log': output_text,
-            'parametros': {
-                'symbol': symbol,
-                'timeframe': timeframe,
-                'fecha_inicio': fecha_inicio,
-                'fecha_fin': fecha_fin,
-                'capital_inicial': capital_inicial
+        # Calcular métricas de rendimiento
+        ganancia_perdida = capital_final - capital_inicial_real
+        rentabilidad_porcentaje = ((capital_final - capital_inicial_real) / capital_inicial_real) * 100 if capital_inicial_real > 0 else 0
+        tasa_acierto = (instancia.ganadas / instancia.cnt * 100) if instancia.cnt > 0 else 0
+
+        # Preparar respuesta estructurada similar al demo
+        return JsonResponse({
+            "fechas": [f.strftime("%Y-%m-%d %H:%M:%S") for f in fechas],
+            "precio": precios_clean,
+            "patronVela": indi_clean,
+            "volma": volma_clean,
+            "historial": historico_vol_max,
+            "datas closed": datas_close_list,
+            # Agregar resumen de resultados
+            "resumen": {
+                "capital_inicial": capital_inicial_real,
+                "capital_final": capital_final,
+                "ganancia_perdida": ganancia_perdida,
+                "rentabilidad_porcentaje": rentabilidad_porcentaje,
+                "operaciones_totales": instancia.cnt,
+                "operaciones_ganadas": instancia.ganadas,
+                "operaciones_perdidas": instancia.perdidas,
+                "tasa_acierto": tasa_acierto,
+                "racha_perdidas": getattr(instancia, 'loss_streak', 0),
+                "velas_negativas": getattr(instancia, 'vNegativas', 0)
+            },
+            # Parámetros utilizados
+            "parametros_utilizados": {
+                "symbol": symbol,
+                "timeframe": timeframe,
+                "fecha_inicio": fecha_inicio,
+                "fecha_fin": fecha_fin,
+                "capital_inicial": capital_inicial,
+                "ema_fast": ema_fast,
+                "ema_slow": ema_slow,
+                "rsi_period": rsi_period,
+                "stop_loss_mult": stop_loss_mult,
+                "take_profit_mult": take_profit_mult,
+                "risk_per_trade": risk_per_trade
             }
-        }
-        
-        return Response(resultado, status=status.HTTP_200_OK)
+        })
         
     except Exception as e:
         return Response({
@@ -213,6 +299,7 @@ def run_custom_backtesting(request):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_strategy_info(request):
     """
     Retorna información sobre la estrategia de backtesting

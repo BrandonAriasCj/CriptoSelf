@@ -94,11 +94,11 @@ export function BotActivity() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-white text-2xl flex items-center gap-2">
+              <CardTitle className="text-2xl flex items-center gap-2">
                 <Activity className="w-6 h-6" />
                 Actividad del Bot
               </CardTitle>
-              <p className="text-gray-300">Monitoreo en tiempo real de tu estrategia</p>
+              <p className="text-muted-foreground">Monitoreo en tiempo real de tu estrategia</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
@@ -113,13 +113,13 @@ export function BotActivity() {
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <Card key={index} className="bg-gray-900 border-gray-700">
+            <Card key={index}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-400">{stat.title}</p>
+                    <p className="text-sm text-muted-foreground">{stat.title}</p>
                     <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-                    <p className="text-xs text-gray-500">{stat.change}</p>
+                    <p className="text-xs text-muted-foreground">{stat.change}</p>
                   </div>
                   <Icon className={`w-8 h-8 ${stat.color}`} />
                 </div>
@@ -130,11 +130,11 @@ export function BotActivity() {
       </div>
 
       {/* Recent Trades */}
-      <Card className="bg-gray-900 border-gray-700">
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-white">Trades Recientes</CardTitle>
-            <Button variant="outline" size="sm" className="border-gray-600 text-gray-300">
+            <CardTitle>Trades Recientes</CardTitle>
+            <Button variant="outline" size="sm">
               Ver Todo
             </Button>
           </div>
@@ -144,7 +144,7 @@ export function BotActivity() {
             {recentTrades.map((trade) => (
               <div
                 key={trade.id}
-                className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-600"
+                className="flex items-center justify-between p-4 bg-muted rounded-lg border"
               >
                 <div className="flex items-center gap-4">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
@@ -158,12 +158,12 @@ export function BotActivity() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-white">{trade.pair}</span>
+                      <span className="font-medium">{trade.pair}</span>
                       <Badge className={trade.type === 'buy' ? 'bg-green-600' : 'bg-red-600'}>
                         {trade.type.toUpperCase()}
                       </Badge>
                     </div>
-                    <div className="text-sm text-gray-400">
+                    <div className="text-sm text-muted-foreground">
                       {trade.amount} @ ${trade.price.toLocaleString()} • {trade.strategy}
                     </div>
                   </div>
@@ -172,7 +172,7 @@ export function BotActivity() {
                   <div className={`font-medium ${trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}
                   </div>
-                  <div className="text-sm text-gray-500 flex items-center gap-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {trade.time}
                   </div>
@@ -185,42 +185,42 @@ export function BotActivity() {
 
       {/* Bot Status */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-gray-900 border-gray-700">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white">Estado del Bot</CardTitle>
+            <CardTitle>Estado del Bot</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-gray-400">Estado</span>
+              <span className="text-muted-foreground">Estado</span>
               <Badge className="bg-green-600">Ejecutándose</Badge>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-400">Estrategia Activa</span>
-              <span className="text-white">MA Cross + RSI</span>
+              <span className="text-muted-foreground">Estrategia Activa</span>
+              <span>MA Cross + RSI</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-400">Próxima Verificación</span>
-              <span className="text-white">2 min</span>
+              <span className="text-muted-foreground">Próxima Verificación</span>
+              <span>2 min</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-400">Capital Asignado</span>
-              <span className="text-white">$10,000</span>
+              <span className="text-muted-foreground">Capital Asignado</span>
+              <span>$10,000</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-900 border-gray-700">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white">Controles</CardTitle>
+            <CardTitle>Controles</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button variant="destructive" className="w-full">
               Pausar Bot
             </Button>
-            <Button variant="outline" className="w-full border-gray-600 text-gray-300">
+            <Button variant="outline" className="w-full">
               Reiniciar Estrategia
             </Button>
-            <Button variant="outline" className="w-full border-gray-600 text-gray-300">
+            <Button variant="outline" className="w-full">
               Descargar Logs
             </Button>
           </CardContent>

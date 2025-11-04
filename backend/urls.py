@@ -16,5 +16,5 @@ urlpatterns = [
     path('api/auth/', include('authentication.urls')),
     
     # OAuth2 Provider (Django OAuth Toolkit)
-    path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
+    path('o/', include('oauth2_provider.urls', namespace='oauth2_provider_backend')),
 ]
