@@ -1,33 +1,32 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Play, BarChart3, TrendingUp, DollarSign, Activity } from 'lucide-react';
+import { Play, BarChart3, TrendingUp, DollarSign, Activity, LineChart } from 'lucide-react';
+import { BacktestingChart } from './BacktestingChart';
+import { SimpleBacktestingChart } from './SimpleBacktestingChart';
 
-interface BacktestingData {
-  fechas: string[];
-  precio: number[];
-  patronVela: number[];
-  volma: number[];
-  historial: number[];
-  'datas closed': number[];
-}
+
 
 export function BacktestingDemo() {
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const [chartView, setChartView] = useState<'detailed' | 'simple'>('detailed');
 
   const runDemo = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch('http://localhost:8000/api/backtesting/run-demo/');
-      
+
       if (!response.ok) {
         throw new Error(`Error: ${response.status}`);
       }
-      
+
       const result = await response.json();
+      console.log('Datos recibidos del backend:', result);
+      console.log('Primeros 5 precios:', result.precio?.slice(0, 5));
+      console.log('Primeras 5 fechas:', result.fechas?.slice(0, 5));
       setData(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
@@ -36,16 +35,7 @@ export function BacktestingDemo() {
     }
   };
 
-  const formatChartData = () => {
-    if (!data) return [];
-    
-    return data.fechas.map((fecha, index) => ({
-      fecha: new Date(fecha).toLocaleDateString(),
-      precio: data.precio[index],
-      volumen: data.volma[index] || 0,
-      patron: data.patronVela[index] || 0
-    })).slice(0, 100); // Mostrar solo los primeros 100 puntos para mejor rendimiento
-  };
+
 
   return (
     <div className="space-y-6">
@@ -64,8 +54,8 @@ export function BacktestingDemo() {
                 </p>
               </div>
             </div>
-            <button 
-              onClick={runDemo} 
+            <button
+              onClick={runDemo}
               disabled={isLoading}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -143,6 +133,26 @@ export function BacktestingDemo() {
             </Card>
           </div>
 
+          {/* Debug Info */}
+          <Card className="bg-gray-50 dark:bg-gray-900/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-sm">
+                🔍 Información de Debug
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xs space-y-1 font-mono">
+                <p>Fechas recibidas: {data.fechas?.length || 0}</p>
+                <p>Precios recibidos: {data.precio?.length || 0}</p>
+                <p>Primer precio: {data.precio?.[0] || 'N/A'}</p>
+                <p>Último precio: {data.precio?.[data.precio?.length - 1] || 'N/A'}</p>
+                <p>Tipo de datos precio: {typeof data.precio?.[0]}</p>
+                <p>Volumen recibido: {data.volma?.length || 0}</p>
+                <p>Patrones recibidos: {data.patronVela?.length || 0}</p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Data Display */}
           <Card>
             <CardHeader>
@@ -157,13 +167,18 @@ export function BacktestingDemo() {
                 <div>
                   <h4 className="font-semibold mb-3 text-blue-600">Precios BTC/USDT</h4>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {data.fechas.slice(0, 10).map((fecha, index) => (
+                    {data.fechas.slice(0, 10).map((fecha: string, index: number) => (
                       <div key={index} className="flex justify-between items-center p-2 bg-muted/50 rounded">
                         <span className="text-sm text-muted-foreground">
-                          {new Date(fecha).toLocaleDateString()}
+                          {new Date(fecha).toLocaleDateString('es-ES', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
                         </span>
                         <span className="font-mono font-semibold">
-                          ${data.precio[index]?.toFixed(2)}
+                          ${data.precio[index]?.toFixed(2) || 'N/A'}
                         </span>
                       </div>
                     ))}
@@ -177,22 +192,67 @@ export function BacktestingDemo() {
                 <div>
                   <h4 className="font-semibold mb-3 text-green-600">Volumen de Trading</h4>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {data.volma.slice(0, 10).map((vol, index) => (
+                    {data.volma.slice(0, 10).map((vol: number | null, index: number) => (
                       <div key={index} className="flex justify-between items-center p-2 bg-muted/50 rounded">
                         <span className="text-sm text-muted-foreground">
                           Vela {index + 1}
                         </span>
                         <span className="font-mono font-semibold">
-                          {vol?.toFixed(0) || '0'}
+                          {vol !== null && vol !== undefined ? vol.toFixed(0) : 'N/A'}
                         </span>
                       </div>
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Promedio: {(data.volma.reduce((a, b) => a + b, 0) / data.volma.length).toFixed(0)}
+                    Promedio: {data.volma.filter((v: number | null) => v !== null && v !== undefined).length > 0
+                      ? (data.volma.filter((v: number | null) => v !== null && v !== undefined)
+                        .reduce((a: number, b: number) => a + b, 0) /
+                        data.volma.filter((v: number | null) => v !== null && v !== undefined).length).toFixed(0)
+                      : 'N/A'}
                   </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Gráfico de Backtesting */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Gráfico de Simulación
+                </CardTitle>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setChartView('detailed')}
+                    className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm transition-colors ${chartView === 'detailed'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                      }`}
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    Completo
+                  </button>
+                  <button
+                    onClick={() => setChartView('simple')}
+                    className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm transition-colors ${chartView === 'simple'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                      }`}
+                  >
+                    <LineChart className="w-4 h-4" />
+                    Simple
+                  </button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {chartView === 'detailed' ? (
+                <BacktestingChart data={data} />
+              ) : (
+                <SimpleBacktestingChart data={data} />
+              )}
             </CardContent>
           </Card>
 

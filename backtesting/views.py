@@ -61,26 +61,37 @@ def run_backtesting_demo(request):
             data = cerebro.datas[0]
             estrategia = cerebro.runstrats[0][0]
 
+            # Extraer datos correctamente de las líneas de Backtrader
             fechas = [bt.num2date(x) for x in data.lines.datetime.array]
-            precios = list(data.close)
-            indi = list(estrategia.patronVela1)
-            volma = list(estrategia.vol_ma)
+            precios = list(data.lines.close.array)  # Usar .array para obtener todos los valores
+            indi = list(estrategia.patronVela1.lines.status.array)  # Usar la línea status del indicador
+            volma = list(estrategia.vol_ma.lines.sma.array)  # Usar la línea sma del indicador vol_ma
             historico_vol_max = list(estrategia.vol_ma_values)
             datas_close_list = list(estrategia.datas_close)
             
+            # Debug: Imprimir información sobre los datos extraídos
+            print(f"DEBUG - Fechas extraídas: {len(fechas)}")
+            print(f"DEBUG - Precios extraídos: {len(precios)}")
+            print(f"DEBUG - Primeros 3 precios: {precios[:3] if len(precios) > 3 else precios}")
+            print(f"DEBUG - Últimos 3 precios: {precios[-3:] if len(precios) > 3 else precios}")
+            print(f"DEBUG - Indicadores extraídos: {len(indi)}")
+            print(f"DEBUG - Volumen MA extraído: {len(volma)}")
+
             # Convertir NaN a None para JSON válido
             import math
-            indi_clean = [None if math.isnan(x) else x for x in indi]
-            volma_clean = [None if math.isnan(x) else x for x in volma]
+            indi_clean = [None if (isinstance(x, float) and math.isnan(x)) else x for x in indi]
+            volma_clean = [None if (isinstance(x, float) and math.isnan(x)) else x for x in volma]
+            precios_clean = [None if (isinstance(x, float) and math.isnan(x)) else x for x in precios]
 
+            print(f"DEBUG - Precios después de limpiar: {len(precios_clean)}")
+            print(f"DEBUG - Primeros 3 precios limpios: {precios_clean[:3] if len(precios_clean) > 3 else precios_clean}")
 
-
-            #capital_final = cerebro.broker.getvalue()
-            #print(f"Capital final: {capital_final:.2f}")
-            #print(f"Cerradas Totales: {instancia.cnt}")
-            #print(f"Ganadas: {instancia.ganadas}")
-            #print(f"Perdidas: {instancia.perdidas}")
-            #print(f"Velas negativas: {instancia.vNegativas}")
+            capital_final = cerebro.broker.getvalue()
+            print(f"Capital final: {capital_final:.2f}")
+            print(f"Cerradas Totales: {instancia.cnt}")
+            print(f"Ganadas: {instancia.ganadas}")
+            print(f"Perdidas: {instancia.perdidas}")
+            print(f"Velas negativas: {instancia.vNegativas}")
 
         # Obtener la salida capturada
         output_text = output_buffer.getvalue()
@@ -89,7 +100,7 @@ def run_backtesting_demo(request):
 
         respuesta_json = JsonResponse({
                 "fechas": [f.strftime("%Y-%m-%d %H:%M:%S") for f in fechas],
-                "precio": precios,
+                "precio": precios_clean,
                 "patronVela": indi_clean,
                 "volma": volma_clean,
                 "historial": historico_vol_max,
