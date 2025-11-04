@@ -256,43 +256,155 @@ export function BacktestingDemo() {
             </CardContent>
           </Card>
 
-          {/* Pattern Analysis */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
-                Análisis de Patrones de Velas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">
-                    {data.patronVela.filter(p => p > 0).length}
-                  </p>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    Patrones Detectados
-                  </p>
+          {/* Results Summary and Pattern Analysis */}
+          <div className="flex flex-row gap-6">{/* Flexbox para forzar lado a lado */}
+            {/* Pattern Analysis */}
+            <Card className="flex-1 h-fit">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Análisis de Patrones de Velas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                    <p className="text-2xl font-bold text-blue-600">
+                      {data.patronVela.filter((p: any) => p > 0).length}
+                    </p>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      Patrones Detectados
+                    </p>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                    <p className="text-2xl font-bold text-green-600">
+                      {((data.patronVela.filter((p: any) => p > 0).length / data.patronVela.length) * 100).toFixed(1)}%
+                    </p>
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      Tasa de Detección
+                    </p>
+                  </div>
+                  <div className="text-center p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
+                    <p className="text-2xl font-bold text-purple-600">
+                      {data.fechas.length}
+                    </p>
+                    <p className="text-sm text-purple-700 dark:text-purple-300">
+                      Total de Velas
+                    </p>
+                  </div>
                 </div>
-                <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                  <p className="text-2xl font-bold text-green-600">
-                    {((data.patronVela.filter(p => p > 0).length / data.patronVela.length) * 100).toFixed(1)}%
-                  </p>
-                  <p className="text-sm text-green-700 dark:text-green-300">
-                    Tasa de Detección
-                  </p>
+              </CardContent>
+            </Card>
+
+            {/* Trading Results Summary */}
+            <Card className="flex-1 h-fit">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  Resumen de Resultados
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Capital */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                      <p className="text-lg font-bold text-gray-700 dark:text-gray-300">
+                        ${data.resumen?.capital_inicial?.toFixed(2) || '0.00'}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        Capital Inicial
+                      </p>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                      <p className="text-lg font-bold text-gray-700 dark:text-gray-300">
+                        ${data.resumen?.capital_final?.toFixed(2) || '0.00'}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        Capital Final
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Performance */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className={`text-center p-3 rounded-lg ${
+                      (data.resumen?.ganancia_perdida || 0) >= 0 
+                        ? 'bg-green-50 dark:bg-green-950/20' 
+                        : 'bg-red-50 dark:bg-red-950/20'
+                    }`}>
+                      <p className={`text-lg font-bold ${
+                        (data.resumen?.ganancia_perdida || 0) >= 0 
+                          ? 'text-green-600' 
+                          : 'text-red-600'
+                      }`}>
+                        {(data.resumen?.ganancia_perdida || 0) >= 0 ? '+' : ''}
+                        ${data.resumen?.ganancia_perdida?.toFixed(2) || '0.00'}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        Ganancia/Pérdida
+                      </p>
+                    </div>
+                    <div className={`text-center p-3 rounded-lg ${
+                      (data.resumen?.rentabilidad_porcentaje || 0) >= 0 
+                        ? 'bg-green-50 dark:bg-green-950/20' 
+                        : 'bg-red-50 dark:bg-red-950/20'
+                    }`}>
+                      <p className={`text-lg font-bold ${
+                        (data.resumen?.rentabilidad_porcentaje || 0) >= 0 
+                          ? 'text-green-600' 
+                          : 'text-red-600'
+                      }`}>
+                        {(data.resumen?.rentabilidad_porcentaje || 0) >= 0 ? '+' : ''}
+                        {data.resumen?.rentabilidad_porcentaje?.toFixed(2) || '0.00'}%
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        Rentabilidad
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Operations */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                      <p className="text-lg font-bold text-blue-600">
+                        {data.resumen?.operaciones_totales || 0}
+                      </p>
+                      <p className="text-xs text-blue-700 dark:text-blue-300">
+                        Total
+                      </p>
+                    </div>
+                    <div className="text-center p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                      <p className="text-lg font-bold text-green-600">
+                        {data.resumen?.operaciones_ganadas || 0}
+                      </p>
+                      <p className="text-xs text-green-700 dark:text-green-300">
+                        Ganadas
+                      </p>
+                    </div>
+                    <div className="text-center p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
+                      <p className="text-lg font-bold text-red-600">
+                        {data.resumen?.operaciones_perdidas || 0}
+                      </p>
+                      <p className="text-xs text-red-700 dark:text-red-300">
+                        Perdidas
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Success Rate */}
+                  <div className="text-center p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg">
+                    <p className="text-2xl font-bold text-purple-600">
+                      {data.resumen?.tasa_acierto?.toFixed(1) || '0.0'}%
+                    </p>
+                    <p className="text-sm text-purple-700 dark:text-purple-300">
+                      Tasa de Acierto
+                    </p>
+                  </div>
                 </div>
-                <div className="text-center p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
-                  <p className="text-2xl font-bold text-purple-600">
-                    {data.fechas.length}
-                  </p>
-                  <p className="text-sm text-purple-700 dark:text-purple-300">
-                    Total de Velas
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </>
       )}
     </div>

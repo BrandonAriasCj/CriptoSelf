@@ -98,6 +98,11 @@ def run_backtesting_demo(request):
         
         # Preparar respuesta estructurada
 
+        # Calcular métricas de rendimiento
+        ganancia_perdida = capital_final - capital_inicial
+        rentabilidad_porcentaje = ((capital_final - capital_inicial) / capital_inicial) * 100 if capital_inicial > 0 else 0
+        tasa_acierto = (instancia.ganadas / instancia.cnt * 100) if instancia.cnt > 0 else 0
+
         respuesta_json = JsonResponse({
                 "fechas": [f.strftime("%Y-%m-%d %H:%M:%S") for f in fechas],
                 "precio": precios_clean,
@@ -105,6 +110,19 @@ def run_backtesting_demo(request):
                 "volma": volma_clean,
                 "historial": historico_vol_max,
                 "datas closed": datas_close_list,
+                # Agregar resumen de resultados
+                "resumen": {
+                    "capital_inicial": capital_inicial,
+                    "capital_final": capital_final,
+                    "ganancia_perdida": ganancia_perdida,
+                    "rentabilidad_porcentaje": rentabilidad_porcentaje,
+                    "operaciones_totales": instancia.cnt,
+                    "operaciones_ganadas": instancia.ganadas,
+                    "operaciones_perdidas": instancia.perdidas,
+                    "tasa_acierto": tasa_acierto,
+                    "racha_perdidas": getattr(instancia, 'loss_streak', 0),
+                    "velas_negativas": getattr(instancia, 'vNegativas', 0)
+                }
          })
         
         data = respuesta_json
