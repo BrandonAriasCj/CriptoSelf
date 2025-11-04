@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Play, BarChart3, TrendingUp, DollarSign, Activity, LineChart } from 'lucide-react';
+import { Play, BarChart3, TrendingUp, DollarSign, Activity, LineChart, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import { BacktestingChart } from './BacktestingChart';
 import { SimpleBacktestingChart } from './SimpleBacktestingChart';
+import { BacktestingConfig, type BacktestingConfig as ConfigType } from './BacktestingConfig';
 
 
 
@@ -11,13 +12,30 @@ export function BacktestingDemo() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [chartView, setChartView] = useState<'detailed' | 'simple'>('detailed');
+  const [showConfig, setShowConfig] = useState(false);
+  const [config, setConfig] = useState<ConfigType | null>(null);
 
   const runDemo = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:8000/api/backtesting/run-demo/');
+      let url = 'http://localhost:8000/api/backtesting/run-demo/';
+      let options: RequestInit = { method: 'GET' };
+
+      // Si hay configuración personalizada, usar el endpoint personalizado
+      if (config) {
+        url = 'http://localhost:8000/api/backtesting/run-custom/';
+        options = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(config)
+        };
+      }
+
+      const response = await fetch(url, options);
 
       if (!response.ok) {
         throw new Error(`Error: ${response.status}`);
@@ -25,14 +43,17 @@ export function BacktestingDemo() {
 
       const result = await response.json();
       console.log('Datos recibidos del backend:', result);
-      console.log('Primeros 5 precios:', result.precio?.slice(0, 5));
-      console.log('Primeras 5 fechas:', result.fechas?.slice(0, 5));
+      console.log('Configuración usada:', config || 'Demo por defecto');
       setData(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleConfigChange = (newConfig: ConfigType) => {
+    setConfig(newConfig);
   };
 
 
@@ -54,17 +75,35 @@ export function BacktestingDemo() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={runDemo}
-              disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Play className="w-4 h-4" />
-              {isLoading ? 'Ejecutando...' : 'Ejecutar Demo'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowConfig(!showConfig)}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
+              >
+                <Settings className="w-4 h-4" />
+                Configurar
+                {showConfig ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+              <button
+                onClick={runDemo}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4" />
+                {isLoading ? 'Ejecutando...' : config ? 'Ejecutar Personalizado' : 'Ejecutar Demo'}
+              </button>
+            </div>
           </div>
         </CardHeader>
       </Card>
+
+      {/* Configuration Panel */}
+      {showConfig && (
+        <BacktestingConfig 
+          onConfigChange={handleConfigChange}
+          isLoading={isLoading}
+        />
+      )}
 
       {/* Error Display */}
       {error && (
