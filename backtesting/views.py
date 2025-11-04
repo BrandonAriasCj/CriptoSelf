@@ -87,8 +87,7 @@ def run_backtesting_demo(request):
         
         # Preparar respuesta estructurada
 
-        
-        return JsonResponse({
+        respuesta_json = JsonResponse({
                 "fechas": [f.strftime("%Y-%m-%d %H:%M:%S") for f in fechas],
                 "precio": precios,
                 "patronVela": indi_clean,
@@ -96,6 +95,10 @@ def run_backtesting_demo(request):
                 "historial": historico_vol_max,
                 "datas closed": datas_close_list,
          })
+        
+        data = respuesta_json
+        print("data: ", data.content)
+        return respuesta_json
         #return Response(resultado, status=status.HTTP_200_OK)
         
     except Exception as e:
