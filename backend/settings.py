@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'authentication.apps.AuthenticationConfig',
     'api',
     'backtesting',
+    'lessons.apps.LessonsConfig',
 ]
 
 MIDDLEWARE = [

@@ -11,6 +11,7 @@ urlpatterns = [
     # API endpoints
     path('api/', include('api.urls')),
     path('api/backtesting/', include('backtesting.urls')),
+    path('api/lessons/', include('lessons.urls')),
     
     # Authentication
     path('api/auth/', include('authentication.urls')),

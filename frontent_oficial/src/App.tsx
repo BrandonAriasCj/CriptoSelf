@@ -16,6 +16,14 @@ import {
   BotActivity,
   Education
 } from './pages';
+import Academy from './pages/Academy';
+import AcademySimple from './pages/AcademySimple';
+import AcademyDebug from './pages/AcademyDebug';
+import AcademyFixed from './pages/AcademyFixed';
+import AcademyTest from './pages/AcademyTest';
+import AcademyMinimal from './pages/AcademyMinimal';
+import CategoryLessons from './pages/CategoryLessons';
+import LessonDetail from './pages/LessonDetail';
 import { Button } from './components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from './components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from './components/ui/avatar';
@@ -39,8 +47,6 @@ import {
   Menu,
   Zap,
   TrendingUp,
-  BarChart3,
-  Briefcase,
   Target,
   LogOut,
   User
@@ -86,6 +92,7 @@ const MainApp: React.FC = () => {
   // Determinar la pestaña activa basada en la URL
   const getActiveTabFromPath = (pathname: string): Tab => {
     const path = pathname.substring(1); // Remover el '/' inicial
+    
     const validTabs: Tab[] = ['trading', 'portfolio', 'strategy-builder', 'backtest', 'my-strategy', 'education', 'activity', 'settings'];
     return validTabs.includes(path as Tab) ? (path as Tab) : 'trading';
   };
@@ -134,14 +141,11 @@ const MainApp: React.FC = () => {
   };
 
   const tabs = [
-    /*     { id: 'portfolio' as Tab, label: 'Portfolio', icon: Briefcase },
-        { id: 'strategy-builder' as Tab, label: 'Crear Estrategia', icon: Bot },
-        { id: 'backtest' as Tab, label: 'Backtesting', icon: BarChart3 }, */
     { id: 'my-strategy' as Tab, label: 'Mis Estrategias', icon: Target },
     { id: 'trading' as Tab, label: 'Trading', icon: TrendingUp },
     { id: 'activity' as Tab, label: 'Actividad', icon: Activity },
+    { id: 'education' as Tab, label: 'Academia', icon: BookOpen },
     { id: 'settings' as Tab, label: 'Configuración', icon: SettingsIcon },
-    { id: 'education' as Tab, label: 'Formación', icon: BookOpen },
   ];
 
   const renderContent = () => {
@@ -157,7 +161,7 @@ const MainApp: React.FC = () => {
       case 'my-strategy':
         return <MyStrategy />;
       case 'education':
-        return <Education />;
+        return <AcademyMinimal />;
       case 'activity':
         return <BotActivity />;
       case 'settings':
@@ -254,6 +258,19 @@ const MainApp: React.FC = () => {
       </div>
     </>
   );
+
+  // Comentado temporalmente para debuggear
+  // if (location.pathname.startsWith('/academy')) {
+  //   return (
+  //     <div className="min-h-screen bg-background transition-theme">
+  //       <Routes>
+  //         <Route path="/academy" element={<AcademyMinimal />} />
+  //         <Route path="/academy/category/:categoryId" element={<CategoryLessons />} />
+  //         <Route path="/academy/lesson/:lessonId" element={<LessonDetail />} />
+  //       </Routes>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-screen bg-background transition-theme">
@@ -363,7 +380,7 @@ const MainApp: React.FC = () => {
                             : activeTab === "my-strategy"
                               ? "Gestiona tus estrategias de trading"
                               : activeTab === "education"
-                                ? "Aprende trading cuantitativo y algorítmico"
+                                ? "Academia de trading: aprende desde lo básico hasta estrategias avanzadas"
                                 : activeTab === "activity"
                                   ? "Monitorea la actividad y rendimiento del bot"
                                   : "Configuración y preferencias del sistema"}
@@ -444,15 +461,15 @@ const MainApp: React.FC = () => {
       {/* Logout Confirmation Dialog */}
       <div className="p-6">
         <SimpleLogoutConfirmation
-        isOpen={showLogoutConfirmation}
-        onClose={() => setShowLogoutConfirmation(false)}
-        onConfirm={confirmLogout}
-        userName={
-          user?.first_name && user?.last_name
-            ? `${user.first_name} ${user.last_name}`
-            : user?.username
-        }
-      />
+          isOpen={showLogoutConfirmation}
+          onClose={() => setShowLogoutConfirmation(false)}
+          onConfirm={confirmLogout}
+          userName={
+            user?.first_name && user?.last_name
+              ? `${user.first_name} ${user.last_name}`
+              : user?.username
+          }
+        />
       </div>
     </div>
 
@@ -463,7 +480,7 @@ const MainApp: React.FC = () => {
 export default function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="criptoself-theme">
-      <Router>
+      <Router future={{ v7_relativeSplatPath: true }}>
         <AuthProvider>
           <div className="min-h-screen">
             <Routes>
@@ -472,7 +489,17 @@ export default function App() {
               <Route path="/auth/google/callback" element={<GoogleCallback />} />
               <Route path="/auth/github/callback" element={<GitHubCallback />} />
 
-              {/* Rutas protegidas */}
+              {/* Rutas de Academia */}
+              <Route
+                path="/academy/*"
+                element={
+                  <ProtectedRoute>
+                    <MainApp />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Rutas protegidas principales */}
               <Route
                 path="/trading"
                 element={

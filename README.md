@@ -98,6 +98,19 @@ node start-dev.js
 - **Tema adaptativo** (claro/oscuro) automático
 - **Diseño responsive** optimizado para desktop y móvil
 
+### 🎓 Academia de Trading Integrada
+- **Programa educativo completo** desde básico hasta avanzado
+- **4 módulos estructurados**:
+  - Fundamentos del Trading
+  - Análisis Técnico
+  - Gestión de Riesgo
+  - Trading Algorítmico
+- **Sistema de evaluación** con quizzes interactivos
+- **Progreso gamificado** con desbloqueo progresivo
+- **Contenido multimedia** con Markdown, imágenes y videos
+- **Certificaciones** al completar módulos
+- **Tracking de tiempo** y estadísticas de aprendizaje
+
 ### 🔐 Sistema de Autenticación Robusto
 - **OAuth2** con Django OAuth Toolkit
 - **Autenticación social** (Google, GitHub) con Django Allauth
@@ -173,6 +186,11 @@ python manage.py create_oauth_app --name "Trading Simulator Frontend"
 python manage.py createsuperuser
 ```
 
+9. **Poblar contenido académico**:
+```bash
+python manage.py populate_lessons
+```
+
 ### Configuración del Frontend
 
 1. **Navegar al directorio del frontend**:
@@ -185,7 +203,12 @@ cd frontent_oficial
 npm install
 ```
 
-3. **Configurar variables de entorno**:
+3. **Instalar dependencias adicionales**:
+```bash
+npm install framer-motion react-markdown
+```
+
+4. **Configurar variables de entorno**:
 ```bash
 cp .env.example .env
 # Configurar las URLs del backend
@@ -231,6 +254,16 @@ npm run dev
 - `POST /api/backtesting/run-custom/` - Backtesting personalizado
 - `GET /api/backtesting/strategy-info/` - Información de estrategias
 
+### 🎓 Academia de Trading
+- `GET /api/lessons/categories/` - Lista de categorías de lecciones
+- `GET /api/lessons/categories/{id}/lessons/` - Lecciones por categoría
+- `GET /api/lessons/lessons/{id}/` - Detalle de lección específica
+- `POST /api/lessons/lessons/{id}/start/` - Iniciar una lección
+- `POST /api/lessons/lessons/{id}/progress/` - Actualizar progreso
+- `POST /api/lessons/quizzes/{id}/submit/` - Enviar respuestas de quiz
+- `GET /api/lessons/progress/summary/` - Resumen de progreso del usuario
+- `GET /api/lessons/recommendations/` - Lecciones recomendadas
+
 ### 📝 Tareas
 - `GET /api/health/` - Verificar estado de la API
 - `GET /api/tasks/` - Listar todas las tareas
@@ -270,6 +303,12 @@ trading-simulator/
 │   ├── views.py              # Vistas de backtesting
 │   ├── custom_strategy.py    # Estrategias personalizadas
 │   └── demo.py               # Demo de backtesting
+├── lessons/                  # Sistema académico
+│   ├── models.py             # Modelos de lecciones y quizzes
+│   ├── views.py              # API de la academia
+│   ├── serializers.py        # Serializadores de lecciones
+│   ├── admin.py              # Panel de administración
+│   └── management/commands/  # Comandos para poblar contenido
 ├── users/                    # Gestión de usuarios
 │   ├── models.py             # Modelo de usuario personalizado
 │   └── serializers.py        # Serializadores de usuario
@@ -277,6 +316,9 @@ trading-simulator/
 │   ├── src/
 │   │   ├── components/       # Componentes React
 │   │   ├── pages/           # Páginas principales
+│   │   │   ├── Academy.tsx  # Página principal de la academia
+│   │   │   ├── CategoryLessons.tsx # Lecciones por categoría
+│   │   │   └── LessonDetail.tsx    # Detalle de lección individual
 │   │   ├── contexts/        # Contextos React
 │   │   ├── services/        # Servicios API
 │   │   └── styles/          # Estilos CSS
