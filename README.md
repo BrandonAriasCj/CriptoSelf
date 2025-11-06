@@ -291,16 +291,11 @@ trading-simulator/
 
 ## 🚀 Próximas Funcionalidades
 
-- [ ] **Trading con múltiples timeframes** (1m, 5m, 15m, 1h, 4h, 1d)
-- [ ] **Alertas y notificaciones** push en tiempo real
-- [ ] **Copy trading** y seguimiento de traders exitosos
-- [ ] **Análisis técnico avanzado** con más de 50 indicadores
-- [ ] **Paper trading competitions** entre usuarios
-- [ ] **API para estrategias externas** con webhooks
-- [ ] **Mobile app** nativa (React Native)
-- [ ] **Integración con más exchanges** (Coinbase, Kraken, etc.)
-- [ ] **Machine Learning** para predicción de precios
-- [ ] **Social trading** con feed de operaciones
+- [ ] **Simulacion** con indicadores tecnicos
+- [ ] **Estadisticas** y simulación de montecarlo
+- [ ] **Academy** sección para el aprendizaje
+- [ ] **Aplicacion mobil** informacion clave y notificaciones.
+- [ ] - [ ] **Alertas y notificaciones** push en tiempo real
 
 ## 🤝 Contribuir
 
@@ -309,16 +304,6 @@ trading-simulator/
 3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
 4. Push a la rama (`git push origin feature/AmazingFeature`)
 5. Abre un Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
-
-## 📞 Soporte
-
-- **Issues**: [GitHub Issues](https://github.com/tu-usuario/trading-simulator/issues)
-- **Documentación**: [Wiki del proyecto](https://github.com/tu-usuario/trading-simulator/wiki)
-- **Email**: soporte@tradingsimulator.com
 
 ---
 
