@@ -74,9 +74,6 @@ node start-dev.js
 - **Estrategias personalizables** con parámetros ajustables
 - **Indicadores técnicos avanzados**:
   - EMAs (Medias Móviles Exponenciales)
-  - RSI (Índice de Fuerza Relativa)
-  - Bollinger Bands
-  - ATR (Average True Range)
 - **Patrones de velas** japonesas personalizados
 - **Presets de gestión de riesgo**:
   - Conservador (1-2% por operación)
@@ -89,12 +86,10 @@ node start-dev.js
   - Retorno total y anualizado
 
 ### 📊 Visualización y UX Avanzada
-- **Gráficos interactivos** con Canvas HTML5 optimizado
 - **Integración completa** de operaciones en el chart
 - **Tooltips dinámicos** con detalles de posiciones
 - **Líneas de P&L** en tiempo real
 - **Marcadores visuales** para entradas, Stop Loss y Take Profit
-- **Interfaz Glassmorphism** moderna y elegante
 - **Tema adaptativo** (claro/oscuro) automático
 - **Diseño responsive** optimizado para desktop y móvil
 
