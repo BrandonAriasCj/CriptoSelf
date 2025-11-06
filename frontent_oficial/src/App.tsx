@@ -22,6 +22,8 @@ import AcademyDebug from './pages/AcademyDebug';
 import AcademyFixed from './pages/AcademyFixed';
 import AcademyTest from './pages/AcademyTest';
 import AcademyMinimal from './pages/AcademyMinimal';
+import AcademyComplete from './pages/AcademyComplete';
+import AcademyTest2 from './pages/AcademyTest2';
 import CategoryLessons from './pages/CategoryLessons';
 import LessonDetail from './pages/LessonDetail';
 import { Button } from './components/ui/button';
@@ -161,7 +163,7 @@ const MainApp: React.FC = () => {
       case 'my-strategy':
         return <MyStrategy />;
       case 'education':
-        return <AcademyMinimal />;
+        return <AcademyComplete />;
       case 'activity':
         return <BotActivity />;
       case 'settings':

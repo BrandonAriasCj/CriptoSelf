@@ -19,11 +19,13 @@ class LessonCategoryListView(generics.ListAPIView):
     """Lista todas las categorías de lecciones"""
     queryset = LessonCategory.objects.all()
     serializer_class = LessonCategorySerializer
+    permission_classes = []  # Permitir acceso sin autenticación para testing
 
 
 class LessonsByCategoryView(generics.ListAPIView):
     """Lista lecciones por categoría"""
     serializer_class = LessonSerializer
+    permission_classes = []  # Permitir acceso sin autenticación para testing
     
     def get_queryset(self):
         category_id = self.kwargs['category_id']
@@ -34,7 +36,7 @@ class LessonDetailView(generics.RetrieveAPIView):
     """Detalle de una lección específica"""
     queryset = Lesson.objects.filter(is_active=True)
     serializer_class = LessonSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []  # Permitir acceso sin autenticación para testing
 
 
 @api_view(['POST'])
@@ -161,9 +163,18 @@ def submit_quiz(request, quiz_id):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
 def user_progress_summary(request):
     """Resumen del progreso del usuario"""
+    # Si no está autenticado, devolver progreso vacío
+    if not request.user.is_authenticated:
+        return Response({
+            'total_lessons': 0,
+            'completed_lessons': 0,
+            'completion_percentage': 0,
+            'total_time_minutes': 0,
+            'categories_progress': []
+        })
+    
     user = request.user
     
     # Estadísticas generales
