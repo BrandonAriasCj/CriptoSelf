@@ -1,15 +1,6 @@
-# 🚀 Simulador de Trading Manual y Algorítmico
+# 🚀 CriptoSelf - Plataforma de Trading Algorítmico
 
-![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
-![Django](https://img.shields.io/badge/Django-4.2+-green.svg)
-![React](https://img.shields.io/badge/React-18+-61DAFB.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6.svg)
-![WebSocket](https://img.shields.io/badge/WebSocket-Real--Time-orange.svg)
-![License](https://img.shields.io/badge/License-MIT-yellow.svg)
-
-**Plataforma completa de simulación de trading** que combina **trading manual en tiempo real** con **backtesting algorítmico avanzado**. Construida con Django REST Framework, React + Vite, y datos en tiempo real de Binance WebSocket.
-
-> 🎯 **Ideal para**: Traders principiantes y avanzados, desarrolladores de estrategias algorítmicas, estudiantes de finanzas cuantitativas, y cualquiera que quiera practicar trading sin riesgo financiero.
+Una plataforma completa de trading algorítmico con autenticación avanzada, construida con Django REST Framework y React + Vite.
 
 ## ⚡ Inicio Rápido
 
@@ -35,28 +26,26 @@ node start-dev.js
 - **Backend**: http://localhost:8000  
 - **Admin**: http://localhost:8000/admin
 
-## ✨ Características Destacadas
+## Características
 
-### 🎯 Trading Manual
-- **Simulación en tiempo real** con datos de Binance WebSocket
-- **Apalancamiento configurable** de 1x hasta 100x
-- **Stop Loss y Take Profit** automáticos
-- **Gestión de riesgo** y margen profesional
-- **P&L en tiempo real** con cálculos precisos
+### 🔐 Sistema de Autenticación
+- Autenticación OAuth2 con Django OAuth Toolkit
+- Autenticación social (Google, GitHub) con Django Allauth
+- Modelo de usuario personalizado con perfiles extendidos
+- Gestión de tokens con scopes granulares
+- Verificación de email y recuperación de contraseña
 
-### 🤖 Trading Algorítmico
-- **Backtesting histórico** con datos reales
-- **Estrategias personalizables** con múltiples parámetros
-- **Indicadores técnicos** avanzados (EMAs, RSI, Bollinger Bands)
-- **Métricas de rendimiento** (Win Rate, Sharpe Ratio, Drawdown)
-- **Presets de riesgo** predefinidos
+### 📊 API y Funcionalidades
+- API REST con Django REST Framework
+- Sistema de backtesting con Backtrader
+- Modelo de tareas (Task) con operaciones CRUD
+- Panel de administración personalizado
+- Configuración con variables de entorno
+- Base de datos SQLite (configurable)
 
-### 📊 Visualización
-- **Gráficos interactivos** con Canvas optimizado
-- **Operaciones integradas** en el chart
-- **UI Glassmorphism** adaptativa (claro/oscuro)
-- **Responsive Design** para desktop y móvil  
+## Instalación
 
+<<<<<<< HEAD
 ## 🎯 Funcionalidades Completas
 
 ### 💹 Simulador de Trading Manual
@@ -145,11 +134,14 @@ cd trading-simulator
 ```
 
 2. **Crear entorno virtual**:
+=======
+1. Crear un entorno virtual:
+>>>>>>> parent of e3bd815 (actualizacion del README)
 ```bash
 python -m venv venv
 ```
 
-3. **Activar entorno virtual**:
+2. Activar el entorno virtual:
 ```bash
 # Windows
 venv\Scripts\activate
@@ -158,34 +150,34 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-4. **Instalar dependencias**:
+3. Instalar dependencias:
 ```bash
 pip install -r requirements.txt
 ```
 
-5. **Configurar variables de entorno**:
+4. Configurar variables de entorno:
 ```bash
 cp .env.example .env
-# Editar .env con tus configuraciones
 ```
 
-6. **Ejecutar migraciones**:
+5. Ejecutar migraciones:
 ```bash
 python manage.py makemigrations users
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-7. **Crear aplicación OAuth2**:
+6. Crear aplicación OAuth2:
 ```bash
-python manage.py create_oauth_app --name "Trading Simulator Frontend"
+python manage.py create_oauth_app --name "Mi App Frontend"
 ```
 
-8. **Crear superusuario**:
+7. Crear superusuario:
 ```bash
 python manage.py createsuperuser
 ```
 
+<<<<<<< HEAD
 9. **Poblar contenido académico**:
 ```bash
 python manage.py populate_lessons
@@ -232,11 +224,11 @@ node start-dev.js
 **Opción 2: Manual**
 ```bash
 # Terminal 1 - Backend
+=======
+8. Ejecutar el servidor:
+```bash
+>>>>>>> parent of e3bd815 (actualizacion del README)
 python manage.py runserver
-
-# Terminal 2 - Frontend
-cd frontent_oficial
-npm run dev
 ```
 
 ## Endpoints de la API
@@ -281,9 +273,10 @@ npm run dev
 
 Accede al panel de administración en: `http://localhost:8000/admin/`
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
+<<<<<<< HEAD
 trading-simulator/
 ├── backend/                    # Configuración principal Django
 │   ├── settings.py            # Configuraciones del proyecto
@@ -365,3 +358,12 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 ---
 
 ⭐ **¡Dale una estrella al proyecto si te resulta útil!** ⭐
+=======
+backend/
+├── backend/          # Configuración principal del proyecto
+├── api/              # App de la API
+├── manage.py         # Utilidad de Django
+├── requirements.txt  # Dependencias
+└── README.md        # Este archivo
+```
+>>>>>>> parent of e3bd815 (actualizacion del README)
