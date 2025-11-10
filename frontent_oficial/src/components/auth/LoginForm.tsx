@@ -51,9 +51,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
 
         if (event.data.type === `${provider}-auth-success`) {
           const { code } = event.data;
+          console.log(`✅ Código de ${provider} recibido:`, code.substring(0, 20) + '...');
           popup?.close();
 
           try {
+            console.log(`🔄 Intercambiando código por token de ${provider}...`);
             let accessToken: string;
             
             if (provider === 'google') {
@@ -62,14 +64,25 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
               accessToken = await githubAuth.handleCallback(code);
             }
 
+            console.log(`✅ Token de ${provider} obtenido:`, accessToken.substring(0, 20) + '...');
+            console.log(`🔄 Enviando token al backend para autenticación...`);
+            
             await loginWithSocial(provider, accessToken);
-          } catch (error) {
-            console.error(`Error en autenticación ${provider}:`, error);
-            toast.error(`Error en la autenticación con ${provider}`);
+            
+            console.log(`✅ Autenticación con ${provider} completada exitosamente`);
+          } catch (error: any) {
+            console.error(`❌ Error en autenticación ${provider}:`, error);
+            console.error('Detalles del error:', {
+              message: error.message,
+              response: error.response?.data,
+              status: error.response?.status
+            });
+            toast.error(error.response?.data?.error || `Error en la autenticación con ${provider}`);
           }
         }
 
         if (event.data.type === `${provider}-auth-error`) {
+          console.error(`❌ Error de ${provider}:`, event.data.error);
           popup?.close();
           toast.error(`Error en la autenticación con ${provider}`);
         }

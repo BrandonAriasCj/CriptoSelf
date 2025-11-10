@@ -31,16 +31,16 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.log('API Error:', error.response?.status, error.response?.data);
-    
+
     if (error.response?.status === 401) {
       // Solo hacer logout automático si no estamos en páginas de auth o logout
       const currentPath = window.location.pathname;
       const isAuthPage = currentPath === '/auth' || currentPath === '/login' || currentPath === '/register';
       const isLogoutRequest = error.config?.url?.includes('/logout/');
-      
+
       if (!isAuthPage && !isLogoutRequest) {
         console.log('Token expirado o inválido, redirigiendo al login');
-        
+
         // Limpiar storage de forma segura
         try {
           localStorage.removeItem('access_token');
@@ -49,7 +49,7 @@ api.interceptors.response.use(
         } catch (e) {
           console.warn('Error limpiando localStorage:', e);
         }
-        
+
         // Redirigir con un pequeño delay para evitar problemas de renderizado
         setTimeout(() => {
           window.location.href = '/auth';
@@ -147,7 +147,7 @@ export const googleAuth = {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     const redirectUri = `${window.location.origin}/auth/google/callback`;
     const scope = 'openid email profile';
-    
+
     return `https://accounts.google.com/o/oauth2/v2/auth?` +
       `client_id=${clientId}&` +
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
@@ -157,6 +157,8 @@ export const googleAuth = {
   },
 
   async handleCallback(code: string): Promise<string> {
+    console.log('🔄 Google: Intercambiando código por token...');
+
     // Intercambiar código por token de acceso
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -172,7 +174,20 @@ export const googleAuth = {
       }),
     });
 
+    if (!tokenResponse.ok) {
+      const errorData = await tokenResponse.json();
+      console.error('❌ Error de Google OAuth:', errorData);
+      throw new Error(errorData.error_description || 'Error obteniendo token de Google');
+    }
+
     const tokenData = await tokenResponse.json();
+
+    if (!tokenData.access_token) {
+      console.error('❌ No se recibió access_token de Google:', tokenData);
+      throw new Error('No se recibió access_token de Google');
+    }
+
+    console.log('✅ Token de Google obtenido exitosamente');
     return tokenData.access_token;
   },
 };
@@ -182,7 +197,7 @@ export const githubAuth = {
     const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
     const redirectUri = `${window.location.origin}/auth/github/callback`;
     const scope = 'user:email';
-    
+
     return `https://github.com/login/oauth/authorize?` +
       `client_id=${clientId}&` +
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
