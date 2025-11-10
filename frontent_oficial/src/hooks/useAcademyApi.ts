@@ -21,11 +21,6 @@ export function useAcademyApi<T = any>(): UseAcademyApiResult<T> {
   const { isAuthenticated } = useAuth();
 
   const execute = useCallback(async (apiCall: () => Promise<T>): Promise<T | null> => {
-    if (!isAuthenticated) {
-      setError({ message: 'Usuario no autenticado', status: 401 });
-      return null;
-    }
-
     try {
       setLoading(true);
       setError(null);
@@ -69,14 +64,8 @@ export function useAcademyCategories() {
   
   const loadCategories = useCallback(async () => {
     const result = await execute(async () => {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        throw new Error('No hay token de acceso');
-      }
-
       const response = await fetch('/api/lessons/categories/', {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -85,11 +74,23 @@ export function useAcademyCategories() {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      return response.json();
+      const jsonData = await response.json();
+      
+      // Si la respuesta tiene paginación, extraer los resultados
+      if (jsonData && jsonData.results) {
+        return jsonData.results;
+      }
+      
+      // Si es un array directo, devolverlo
+      if (Array.isArray(jsonData)) {
+        return jsonData;
+      }
+      
+      return [];
     });
 
     // Si falla la API, usar datos de fallback
-    if (!result && error) {
+    if (!result || result.length === 0) {
       const fallbackCategories = [
         {
           id: 1,
@@ -129,10 +130,10 @@ export function useAcademyCategories() {
     }
 
     return result;
-  }, [execute, error]);
+  }, [execute]);
 
   return { 
-    data: data || [], 
+    data: Array.isArray(data) ? data : [], 
     loading, 
     error, 
     loadCategories, 
@@ -145,31 +146,54 @@ export function useUserProgress() {
   const { execute, ...rest } = useAcademyApi();
   
   const loadProgress = useCallback(async () => {
-    return execute(async () => {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        // Si no hay token, devolver null sin error (usuario nuevo)
-        return null;
-      }
+    try {
+      return await execute(async () => {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+          // Si no hay token, devolver progreso vacío
+          return {
+            total_lessons: 0,
+            completed_lessons: 0,
+            completion_percentage: 0,
+            total_time_minutes: 0,
+            categories_progress: []
+          };
+        }
 
-      const response = await fetch('/api/lessons/progress/summary/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        const response = await fetch('/api/lessons/progress/summary/', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.status === 404 || response.status === 401) {
+          // Usuario sin progreso aún o no autenticado
+          return {
+            total_lessons: 0,
+            completed_lessons: 0,
+            completion_percentage: 0,
+            total_time_minutes: 0,
+            categories_progress: []
+          };
+        }
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        return response.json();
       });
-
-      if (response.status === 404) {
-        // Usuario sin progreso aún
-        return null;
-      }
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      return response.json();
-    });
+    } catch (error) {
+      console.error('Error loading progress:', error);
+      return {
+        total_lessons: 0,
+        completed_lessons: 0,
+        completion_percentage: 0,
+        total_time_minutes: 0,
+        categories_progress: []
+      };
+    }
   }, [execute]);
 
   return { loadProgress, ...rest };
@@ -181,14 +205,8 @@ export function useCategoryLessons() {
   
   const loadLessons = useCallback(async (categoryId: number) => {
     const result = await execute(async () => {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        throw new Error('No hay token de acceso');
-      }
-
       const response = await fetch(`/api/lessons/categories/${categoryId}/lessons/`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -197,11 +215,23 @@ export function useCategoryLessons() {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      return response.json();
+      const jsonData = await response.json();
+      
+      // Si la respuesta tiene paginación, extraer los resultados
+      if (jsonData && jsonData.results) {
+        return jsonData.results;
+      }
+      
+      // Si es un array directo, devolverlo
+      if (Array.isArray(jsonData)) {
+        return jsonData;
+      }
+      
+      return [];
     });
 
     // Si falla la API, usar datos de ejemplo
-    if (!result && error) {
+    if (!result || result.length === 0) {
       const fallbackLessons = [
         {
           id: 1,
@@ -229,10 +259,10 @@ export function useCategoryLessons() {
     }
 
     return result;
-  }, [execute, error]);
+  }, [execute]);
 
   return { 
-    data: data || [], 
+    data: Array.isArray(data) ? data : [], 
     loading, 
     error, 
     loadLessons, 

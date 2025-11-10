@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { 
   ArrowLeft, 
   ArrowRight,
@@ -265,20 +267,20 @@ El trading puede ser una actividad lucrativa, pero requiere educación, práctic
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-400"></div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (!lesson) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">Lección no encontrada</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-4">Lección no encontrada</h2>
           <button
             onClick={onBack}
-            className="text-purple-400 hover:text-purple-300"
+            className="text-primary hover:text-primary/80"
           >
             Volver
           </button>
@@ -288,55 +290,55 @@ El trading puede ser una actividad lucrativa, pero requiere educación, práctic
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <button
             onClick={onBack}
-            className="flex items-center text-purple-400 hover:text-purple-300 mb-6 transition-colors"
+            className="flex items-center text-primary hover:text-primary/80 mb-6 transition-colors text-sm font-medium"
           >
-            <ArrowLeft className="w-5 h-5 mr-2" />
+            <ArrowLeft className="w-4 h-4 mr-2" />
             Volver
           </button>
 
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <span className="text-3xl mr-4">{lesson.category_icon}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">{lesson.category_icon}</span>
               <div>
-                <h1 className="text-3xl font-bold text-white">{lesson.title}</h1>
-                <p className="text-gray-300 mt-1">{lesson.category_name}</p>
+                <h1 className="text-3xl font-bold text-foreground">{lesson.title}</h1>
+                <p className="text-muted-foreground text-sm mt-1">{lesson.category_name}</p>
               </div>
             </div>
 
             {/* Timer and Controls */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-4">
               <div className="text-right">
-                <div className="text-2xl font-mono text-purple-400">
+                <div className="text-2xl font-mono text-primary">
                   {formatTime(timeSpent)}
                 </div>
-                <div className="text-sm text-gray-400">
+                <div className="text-xs text-muted-foreground">
                   ~{lesson.duration_minutes} min
                 </div>
               </div>
               
               <button
                 onClick={() => setIsActive(!isActive)}
-                className="p-2 rounded-full bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+                className="p-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
               >
-                {isActive ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                {isActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
           {/* Progress Bar */}
-          <div className="bg-gray-700 rounded-full h-3 mb-4">
+          <div className="bg-muted rounded-full h-2 mb-2">
             <div
-              className="bg-gradient-to-r from-purple-500 to-blue-500 h-3 rounded-full transition-all duration-300"
+              className="bg-primary h-2 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
-          <div className="flex justify-between text-sm text-gray-400">
+          <div className="flex justify-between text-xs text-muted-foreground">
             <span>Progreso: {progress}%</span>
             <span>{progress === 100 ? 'Completada' : 'En progreso'}</span>
           </div>
@@ -344,32 +346,52 @@ El trading puede ser una actividad lucrativa, pero requiere educación, práctic
 
         {/* Lesson Content */}
         {!showQuiz && (
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20 mb-8">
-            <div className="prose prose-invert prose-purple max-w-none">
-              <div 
-                className="text-gray-300 leading-relaxed"
-                style={{ whiteSpace: 'pre-line' }}
-              >
+          <div className="bg-card rounded-xl p-8 border border-border mb-8">
+            <div className="prose prose-base max-w-none
+              prose-headings:text-foreground prose-headings:font-bold prose-headings:tracking-tight
+              prose-h1:text-3xl prose-h1:mb-6 prose-h1:mt-0 prose-h1:pb-3 prose-h1:border-b prose-h1:border-border
+              prose-h2:text-2xl prose-h2:mb-5 prose-h2:mt-10 prose-h2:pb-2 prose-h2:border-b prose-h2:border-border/50
+              prose-h3:text-xl prose-h3:mb-4 prose-h3:mt-8 prose-h3:text-primary
+              prose-h4:text-lg prose-h4:mb-3 prose-h4:mt-6
+              prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:mb-4 prose-p:text-[15px]
+              prose-strong:text-foreground prose-strong:font-semibold
+              prose-em:text-foreground prose-em:italic
+              prose-ul:text-muted-foreground prose-ul:my-4 prose-ul:space-y-2
+              prose-ol:text-muted-foreground prose-ol:my-4 prose-ol:space-y-2
+              prose-li:my-1.5 prose-li:leading-relaxed prose-li:text-[15px]
+              prose-li>ul:mt-2 prose-li>ul:mb-2 prose-li>ul:ml-4 prose-li>ul:pl-4
+              prose-li>ol:mt-2 prose-li>ol:mb-2 prose-li>ol:ml-4 prose-li>ol:pl-4
+              prose-code:text-primary prose-code:bg-muted prose-code:px-2 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono prose-code:before:content-none prose-code:after:content-none
+              prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg prose-pre:p-4 prose-pre:overflow-x-auto
+              prose-blockquote:border-l-4 prose-blockquote:border-l-primary prose-blockquote:pl-4 prose-blockquote:py-2 prose-blockquote:italic prose-blockquote:text-muted-foreground prose-blockquote:bg-muted/30 prose-blockquote:rounded-r
+              prose-a:text-primary prose-a:no-underline prose-a:font-medium hover:prose-a:underline hover:prose-a:text-primary/80
+              prose-hr:border-border prose-hr:my-8
+              prose-table:border-collapse prose-table:w-full
+              prose-th:border prose-th:border-border prose-th:bg-muted prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:font-semibold prose-th:text-foreground
+              prose-td:border prose-td:border-border prose-td:px-4 prose-td:py-2 prose-td:text-muted-foreground
+              prose-img:rounded-lg prose-img:shadow-md
+            ">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {lesson.content}
-              </div>
+              </ReactMarkdown>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-between items-center mt-8 pt-6 border-t border-white/20">
+            <div className="flex justify-between items-center mt-8 pt-6 border-t border-border">
               <button
                 onClick={() => setProgress(Math.min(100, progress + 25))}
-                className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors text-sm font-medium"
               >
-                <ArrowRight className="w-4 h-4 mr-2" />
+                <ArrowRight className="w-4 h-4" />
                 Continuar
               </button>
 
               {progress >= 80 && (
                 <button
                   onClick={completeLesson}
-                  className="flex items-center px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-6 py-2 bg-chart-2 hover:bg-chart-2/90 text-white rounded-lg transition-colors text-sm font-medium"
                 >
-                  <CheckCircle className="w-4 h-4 mr-2" />
+                  <CheckCircle className="w-4 h-4" />
                   Completar Lección
                 </button>
               )}
@@ -379,40 +401,40 @@ El trading puede ser una actividad lucrativa, pero requiere educación, práctic
 
         {/* Quiz Section */}
         {showQuiz && lesson.quiz && (
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
-            <div className="flex items-center mb-6">
-              <Award className="w-6 h-6 text-yellow-400 mr-3" />
-              <h2 className="text-2xl font-bold text-white">{lesson.quiz.title}</h2>
+          <div className="bg-card rounded-xl p-8 border border-border">
+            <div className="flex items-center gap-3 mb-6">
+              <Award className="w-6 h-6 text-chart-4" />
+              <h2 className="text-2xl font-bold text-foreground">{lesson.quiz.title}</h2>
             </div>
 
             {!quizSubmitted ? (
               <>
-                <p className="text-gray-300 mb-6">
+                <p className="text-muted-foreground mb-6 text-sm">
                   Responde las siguientes preguntas para completar la lección. 
                   Puntuación mínima requerida: {lesson.quiz.passing_score}%
                 </p>
 
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {lesson.quiz.questions.map((question, index) => (
-                    <div key={question.id} className="bg-white/5 rounded-lg p-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">
+                    <div key={question.id} className="bg-muted/30 rounded-lg p-5 border border-border">
+                      <h3 className="text-base font-semibold text-foreground mb-4">
                         {index + 1}. {question.question_text}
                       </h3>
 
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {question.answers.map((answer) => (
                           <label
                             key={answer.id}
-                            className="flex items-center cursor-pointer hover:bg-white/5 p-3 rounded-lg transition-colors"
+                            className="flex items-center cursor-pointer hover:bg-muted/50 p-3 rounded-lg transition-colors border border-transparent hover:border-border"
                           >
                             <input
                               type="radio"
                               name={`question-${question.id}`}
                               value={answer.id}
                               onChange={() => handleQuizAnswer(question.id, answer.id)}
-                              className="mr-3 text-purple-600"
+                              className="mr-3 accent-primary"
                             />
-                            <span className="text-gray-300">{answer.answer_text}</span>
+                            <span className="text-foreground text-sm">{answer.answer_text}</span>
                           </label>
                         ))}
                       </div>
@@ -423,18 +445,18 @@ El trading puede ser una actividad lucrativa, pero requiere educación, práctic
                 <div className="flex justify-between items-center mt-8">
                   <button
                     onClick={() => setShowQuiz(false)}
-                    className="flex items-center px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
                   >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    <ArrowLeft className="w-4 h-4" />
                     Volver al contenido
                   </button>
 
                   <button
                     onClick={submitQuiz}
                     disabled={Object.keys(quizAnswers).length < lesson.quiz.questions.length}
-                    className="flex items-center px-6 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-6 py-2 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground rounded-lg transition-colors text-sm font-medium"
                   >
-                    <CheckCircle className="w-4 h-4 mr-2" />
+                    <CheckCircle className="w-4 h-4" />
                     Enviar Respuestas
                   </button>
                 </div>
@@ -442,20 +464,20 @@ El trading puede ser una actividad lucrativa, pero requiere educación, práctic
             ) : (
               /* Quiz Results */
               <div className="text-center">
-                <div className={`text-6xl mb-4 ${quizResult.passed ? 'text-green-400' : 'text-red-400'}`}>
+                <div className={`text-6xl mb-4 ${quizResult.passed ? 'text-chart-2' : 'text-destructive'}`}>
                   {quizResult.passed ? '🎉' : '😔'}
                 </div>
                 
-                <h3 className={`text-2xl font-bold mb-4 ${quizResult.passed ? 'text-green-400' : 'text-red-400'}`}>
+                <h3 className={`text-2xl font-bold mb-4 ${quizResult.passed ? 'text-chart-2' : 'text-destructive'}`}>
                   {quizResult.passed ? '¡Felicitaciones!' : 'No aprobaste'}
                 </h3>
                 
-                <p className="text-gray-300 mb-6">
+                <p className="text-muted-foreground mb-6">
                   Obtuviste {quizResult.percentage.toFixed(1)}% 
                   ({quizResult.score}/{quizResult.totalQuestions} correctas)
                 </p>
 
-                <div className="flex justify-center space-x-4">
+                <div className="flex justify-center gap-4">
                   {!quizResult.passed && (
                     <button
                       onClick={() => {
@@ -463,18 +485,18 @@ El trading puede ser una actividad lucrativa, pero requiere educación, práctic
                         setQuizAnswers({});
                         setQuizResult(null);
                       }}
-                      className="flex items-center px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      className="flex items-center gap-2 px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors text-sm font-medium"
                     >
-                      <RotateCcw className="w-4 h-4 mr-2" />
+                      <RotateCcw className="w-4 h-4" />
                       Intentar de nuevo
                     </button>
                   )}
                   
                   <button
                     onClick={onBack}
-                    className="flex items-center px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-6 py-2 bg-chart-2 hover:bg-chart-2/90 text-white rounded-lg transition-colors text-sm font-medium"
                   >
-                    <ArrowRight className="w-4 h-4 mr-2" />
+                    <ArrowRight className="w-4 h-4" />
                     Continuar
                   </button>
                 </div>

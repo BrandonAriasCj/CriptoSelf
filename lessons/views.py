@@ -20,12 +20,14 @@ class LessonCategoryListView(generics.ListAPIView):
     queryset = LessonCategory.objects.all()
     serializer_class = LessonCategorySerializer
     permission_classes = []  # Permitir acceso sin autenticación para testing
+    pagination_class = None  # Deshabilitar paginación
 
 
 class LessonsByCategoryView(generics.ListAPIView):
     """Lista lecciones por categoría"""
     serializer_class = LessonSerializer
     permission_classes = []  # Permitir acceso sin autenticación para testing
+    pagination_class = None  # Deshabilitar paginación
     
     def get_queryset(self):
         category_id = self.kwargs['category_id']
