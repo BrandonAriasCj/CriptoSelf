@@ -156,39 +156,16 @@ export const googleAuth = {
       `access_type=offline`;
   },
 
-  async handleCallback(code: string): Promise<string> {
-    console.log('🔄 Google: Intercambiando código por token...');
+  async handleCallback(code: string): Promise<LoginResponse> {
+    console.log('🔄 Google: Enviando código al backend para intercambio seguro...');
 
-    // Intercambiar código por token de acceso
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        client_secret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || '',
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: `${window.location.origin}/auth/google/callback`,
-      }),
+    // Enviar código al backend para que lo intercambie de forma segura
+    const response: AxiosResponse<LoginResponse> = await api.post('/auth/google/exchange-code/', {
+      code,
     });
 
-    if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json();
-      console.error('❌ Error de Google OAuth:', errorData);
-      throw new Error(errorData.error_description || 'Error obteniendo token de Google');
-    }
-
-    const tokenData = await tokenResponse.json();
-
-    if (!tokenData.access_token) {
-      console.error('❌ No se recibió access_token de Google:', tokenData);
-      throw new Error('No se recibió access_token de Google');
-    }
-
-    console.log('✅ Token de Google obtenido exitosamente');
-    return tokenData.access_token;
+    console.log('✅ Autenticación con Google completada exitosamente');
+    return response.data;
   },
 };
 

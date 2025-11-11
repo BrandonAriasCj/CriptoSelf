@@ -229,3 +229,13 @@ SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
+
+# Google OAuth2 Settings
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')
+GOOGLE_REDIRECT_URI = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:3000/auth/google/callback')
+
+# GitHub OAuth2 Settings
+GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID', '')
+GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET', '')
+GITHUB_REDIRECT_URI = os.getenv('GITHUB_REDIRECT_URI', 'http://localhost:3000/auth/github/callback')

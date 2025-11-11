@@ -392,6 +392,137 @@ class SocialAuthView(APIView):
         return user
 
 
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def google_exchange_code(request):
+    """
+    Intercambiar código de Google por access_token
+    """
+    code = request.data.get('code')
+    
+    if not code:
+        return Response({
+            'error': 'Código es requerido'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # Intercambiar código por token con Google
+        token_response = requests.post('https://oauth2.googleapis.com/token', data={
+            'client_id': settings.GOOGLE_CLIENT_ID,
+            'client_secret': settings.GOOGLE_CLIENT_SECRET,
+            'code': code,
+            'grant_type': 'authorization_code',
+            'redirect_uri': settings.GOOGLE_REDIRECT_URI,
+        })
+        
+        if token_response.status_code != 200:
+            return Response({
+                'error': 'Error intercambiando código con Google',
+                'details': token_response.json()
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        token_data = token_response.json()
+        access_token = token_data.get('access_token')
+        
+        if not access_token:
+            return Response({
+                'error': 'No se recibió access_token de Google'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Obtener información del usuario de Google
+        user_info_response = requests.get(
+            'https://www.googleapis.com/oauth2/v2/userinfo',
+            headers={'Authorization': f'Bearer {access_token}'}
+        )
+        
+        if user_info_response.status_code != 200:
+            return Response({
+                'error': 'Error obteniendo información del usuario de Google'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        user_info = user_info_response.json()
+        
+        # Validar usuario
+        email = user_info.get('email')
+        if not email:
+            return Response({
+                'error': 'No se pudo obtener el email del usuario'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Buscar usuario existente - NO crear automáticamente
+        try:
+            user = User.objects.get(email=email)
+            
+            # Actualizar información del usuario si es necesario
+            updated = False
+            if not user.first_name and user_info.get('given_name'):
+                user.first_name = user_info.get('given_name')
+                updated = True
+            if not user.last_name and user_info.get('family_name'):
+                user.last_name = user_info.get('family_name')
+                updated = True
+            
+            # Marcar como verificado si se autentica con Google
+            if not user.is_verified or not user.email_verified:
+                user.is_verified = True
+                user.email_verified = True
+                updated = True
+            
+            if updated:
+                user.save()
+                
+        except User.DoesNotExist:
+            return Response({
+                'error': 'Usuario no registrado',
+                'message': 'Este correo no está registrado en el sistema. Por favor, regístrate primero.',
+                'email': email
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Crear token OAuth2 de nuestra aplicación
+        from oauth2_provider.models import Application, AccessToken
+        from datetime import datetime, timedelta
+        import secrets
+        
+        # Obtener la aplicación OAuth2
+        try:
+            application = Application.objects.first()
+            if not application:
+                return Response({
+                    'error': 'No hay aplicaciones OAuth2 configuradas. Ejecuta: python manage.py create_oauth_app'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({
+                'error': f'Error obteniendo aplicación OAuth2: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Crear token
+        oauth2_config = getattr(settings, 'OAUTH2_PROVIDER', {})
+        expires_seconds = oauth2_config.get('ACCESS_TOKEN_EXPIRE_SECONDS', 36000)
+        
+        access_token_obj = AccessToken.objects.create(
+            user=user,
+            application=application,
+            token=secrets.token_urlsafe(30),
+            expires=datetime.now() + timedelta(seconds=expires_seconds),
+            scope='read write'
+        )
+        
+        return Response({
+            'access_token': access_token_obj.token,
+            'token_type': 'Bearer',
+            'expires_in': expires_seconds,
+            'scope': 'read write',
+            'user': UserSerializer(user).data
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return Response({
+            'error': f'Error en autenticación con Google: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 @api_view(['GET', 'POST'])
 @permission_classes([permissions.AllowAny])
 def test_auth(request):

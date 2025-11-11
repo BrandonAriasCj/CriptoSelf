@@ -14,6 +14,7 @@ urlpatterns = [
     
     # Autenticación social
     path('social/', views.SocialAuthView.as_view(), name='social_auth'),
+    path('google/exchange-code/', views.google_exchange_code, name='google_exchange_code'),
     
     # Django OAuth Toolkit URLs
     path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
