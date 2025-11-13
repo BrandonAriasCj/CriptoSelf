@@ -1,4 +1,4 @@
-# 🚀 CriptoSelf - Plataforma de Trading Algorítmico
+# 🚀 CriptoSelf - Plataforma de Simulacion de inversion y trading en criptomonedas
 
 Una plataforma completa de trading algorítmico con autenticación avanzada, construida con Django REST Framework y React + Vite.
 
@@ -45,98 +45,7 @@ node start-dev.js
 
 ## Instalación
 
-<<<<<<< HEAD
-## 🎯 Funcionalidades Completas
-
-### 💹 Simulador de Trading Manual
-- **Trading en tiempo real** con datos de Binance WebSocket
-- **Múltiples pares de trading** (BTC/USDT, ETH/USDT, ADA/USDT, SOL/USDT)
-- **Apalancamiento configurable** de 1x hasta 100x
-- **Órdenes avanzadas**: Stop Loss y Take Profit automáticos
-- **Gestión de margen** y cálculo de nivel de riesgo
-- **P&L en tiempo real** con actualizaciones instantáneas
-- **Visualización gráfica** de todas las operaciones en el chart
-- **Historial de operaciones** detallado
-
-### 🤖 Trading Algorítmico y Backtesting
-- **Motor de backtesting** basado en Backtrader
-- **Estrategias personalizables** con parámetros ajustables
-- **Indicadores técnicos avanzados**:
-  - EMAs (Medias Móviles Exponenciales)
-  - RSI (Índice de Fuerza Relativa)
-  - Bollinger Bands
-  - ATR (Average True Range)
-- **Patrones de velas** japonesas personalizados
-- **Presets de gestión de riesgo**:
-  - Conservador (1-2% por operación)
-  - Moderado (2-5% por operación)
-  - Agresivo (5-10% por operación)
-- **Métricas de rendimiento completas**:
-  - Win Rate y Profit Factor
-  - Sharpe Ratio y Sortino Ratio
-  - Maximum Drawdown
-  - Retorno total y anualizado
-
-### 📊 Visualización y UX Avanzada
-- **Gráficos interactivos** con Canvas HTML5 optimizado
-- **Integración completa** de operaciones en el chart
-- **Tooltips dinámicos** con detalles de posiciones
-- **Líneas de P&L** en tiempo real
-- **Marcadores visuales** para entradas, Stop Loss y Take Profit
-- **Interfaz Glassmorphism** moderna y elegante
-- **Tema adaptativo** (claro/oscuro) automático
-- **Diseño responsive** optimizado para desktop y móvil
-
-### 🎓 Academia de Trading Integrada
-- **Programa educativo completo** desde básico hasta avanzado
-- **4 módulos estructurados**:
-  - Fundamentos del Trading
-  - Análisis Técnico
-  - Gestión de Riesgo
-  - Trading Algorítmico
-- **Sistema de evaluación** con quizzes interactivos
-- **Progreso gamificado** con desbloqueo progresivo
-- **Contenido multimedia** con Markdown, imágenes y videos
-- **Certificaciones** al completar módulos
-- **Tracking de tiempo** y estadísticas de aprendizaje
-
-### 🔐 Sistema de Autenticación Robusto
-- **OAuth2** con Django OAuth Toolkit
-- **Autenticación social** (Google, GitHub) con Django Allauth
-- **Modelo de usuario personalizado** con perfiles extendidos
-- **Gestión de tokens** con scopes granulares
-- **Verificación de email** y recuperación de contraseña
-- **Sesiones seguras** con expiración automática
-
-### ⚡ Stack Tecnológico
-- **Backend**: Django REST Framework + Backtrader
-- **Frontend**: React 18 + Vite + TypeScript
-- **Datos en tiempo real**: Binance WebSocket API
-- **Gráficos**: Canvas HTML5 con renderizado optimizado
-- **Estilos**: Tailwind CSS + Glassmorphism
-- **Base de datos**: SQLite (configurable a PostgreSQL/MySQL)
-- **Autenticación**: OAuth2 + JWT
-- **Deployment**: Docker ready
-
-## 🛠️ Instalación Manual
-
-### Prerrequisitos
-- Python 3.9+
-- Node.js 16+
-- Git
-
-### Configuración del Backend
-
-1. **Clonar el repositorio**:
-```bash
-git clone <repository-url>
-cd trading-simulator
-```
-
-2. **Crear entorno virtual**:
-=======
 1. Crear un entorno virtual:
->>>>>>> parent of e3bd815 (actualizacion del README)
 ```bash
 python -m venv venv
 ```
@@ -177,57 +86,8 @@ python manage.py create_oauth_app --name "Mi App Frontend"
 python manage.py createsuperuser
 ```
 
-<<<<<<< HEAD
-9. **Poblar contenido académico**:
-```bash
-python manage.py populate_lessons
-```
-
-### Configuración del Frontend
-
-1. **Navegar al directorio del frontend**:
-```bash
-cd frontent_oficial
-```
-
-2. **Instalar dependencias**:
-```bash
-npm install
-```
-
-3. **Instalar dependencias adicionales**:
-```bash
-npm install framer-motion react-markdown
-```
-
-4. **Configurar variables de entorno**:
-```bash
-cp .env.example .env
-# Configurar las URLs del backend
-```
-
-### Ejecutar la Aplicación
-
-**Opción 1: Scripts automáticos (Recomendado)**
-```bash
-# Windows
-start-dev.bat
-
-# Linux/Mac
-chmod +x start-dev.sh
-./start-dev.sh
-
-# Multiplataforma
-node start-dev.js
-```
-
-**Opción 2: Manual**
-```bash
-# Terminal 1 - Backend
-=======
 8. Ejecutar el servidor:
 ```bash
->>>>>>> parent of e3bd815 (actualizacion del README)
 python manage.py runserver
 ```
 
@@ -326,36 +186,14 @@ trading-simulator/
 
 ## 🚀 Próximas Funcionalidades
 
-- [ ] **Trading con múltiples timeframes** (1m, 5m, 15m, 1h, 4h, 1d)
-- [ ] **Alertas y notificaciones** push en tiempo real
-- [ ] **Copy trading** y seguimiento de traders exitosos
-- [ ] **Análisis técnico avanzado** con más de 50 indicadores
-- [ ] **Paper trading competitions** entre usuarios
-- [ ] **API para estrategias externas** con webhooks
-- [ ] **Mobile app** nativa (React Native)
-- [ ] **Integración con más exchanges** (Coinbase, Kraken, etc.)
-- [ ] **Machine Learning** para predicción de precios
-- [ ] **Social trading** con feed de operaciones
+- [ ] **Simulacion** con indicadores tecnicos
+- [ ] **Estadisticas** y simulación de montecarlo
+- [ ] **Academy** sección para el aprendizaje
+- [ ] **Aplicacion mobil** informacion clave y notificaciones.
+- [ ] - [ ] **Alertas y notificaciones** push en tiempo real
 
-## 🤝 Contribuir
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
 
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
-
-## 📞 Soporte
-
-- **Issues**: [GitHub Issues](https://github.com/tu-usuario/trading-simulator/issues)
-- **Documentación**: [Wiki del proyecto](https://github.com/tu-usuario/trading-simulator/wiki)
-- **Email**: soporte@tradingsimulator.com
-
----
 
 ⭐ **¡Dale una estrella al proyecto si te resulta útil!** ⭐
 =======
@@ -366,4 +204,4 @@ backend/
 ├── requirements.txt  # Dependencias
 └── README.md        # Este archivo
 ```
->>>>>>> parent of e3bd815 (actualizacion del README)
+
