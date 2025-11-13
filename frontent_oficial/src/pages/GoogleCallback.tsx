@@ -6,22 +6,37 @@ export const GoogleCallback: React.FC = () => {
     const code = urlParams.get('code');
     const error = urlParams.get('error');
 
-    if (error) {
-      // Enviar mensaje de error al padre
-      window.opener?.postMessage({
-        type: 'google-auth-error',
-        error,
-      }, window.location.origin);
-    } else if (code) {
-      // Enviar código al padre
-      window.opener?.postMessage({
-        type: 'google-auth-success',
-        code,
-      }, window.location.origin);
-    }
+    console.log('🔍 GoogleCallback - URL params:', { code: code?.substring(0, 20), error });
 
-    // Cerrar la ventana
-    window.close();
+    if (error) {
+      console.error('❌ Google auth error:', error);
+      // Enviar mensaje de error al padre
+      if (window.opener) {
+        window.opener.postMessage({
+          type: 'google-auth-error',
+          error,
+        }, window.location.origin);
+        
+        // Cerrar después de un pequeño delay
+        setTimeout(() => window.close(), 500);
+      }
+    } else if (code) {
+      console.log('✅ Google code recibido, enviando al padre...');
+      // Enviar código al padre
+      if (window.opener) {
+        window.opener.postMessage({
+          type: 'google-auth-success',
+          code,
+        }, window.location.origin);
+        
+        // Cerrar después de un pequeño delay para asegurar que el mensaje se envíe
+        setTimeout(() => window.close(), 500);
+      } else {
+        console.error('❌ No hay window.opener disponible');
+      }
+    } else {
+      console.error('❌ No se recibió código ni error de Google');
+    }
   }, []);
 
   return (

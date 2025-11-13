@@ -59,7 +59,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
-    profile = UserProfileSerializer()
+    profile = UserProfileSerializer(required=False)
     
     class Meta:
         model = User
@@ -69,16 +69,16 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         ]
     
     def update(self, instance, validated_data):
-        profile_data = validated_data.pop('profile', {})
+        profile_data = validated_data.pop('profile', None)
         
         # Actualizar usuario
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
         
-        # Actualizar perfil
+        # Actualizar perfil si existe
         if profile_data:
-            profile = instance.profile
+            profile, created = UserProfile.objects.get_or_create(user=instance)
             for attr, value in profile_data.items():
                 setattr(profile, attr, value)
             profile.save()

@@ -111,7 +111,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       let response;
       if (provider === 'google') {
+        console.log("a1");
         response = await socialAuthService.loginWithGoogle(accessToken);
+        console.log("b1");
       } else {
         response = await socialAuthService.loginWithGitHub(accessToken);
       }

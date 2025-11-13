@@ -1,46 +1,140 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
-import { Progress } from './ui/progress';
 import { 
   User, 
   Mail, 
   Phone, 
   Calendar,
   TrendingUp,
-  DollarSign,
-  Target,
-  Zap,
   Edit,
-  Camera
+  Camera,
+  Shield,
+  Clock,
+  Key
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
 
-const userStats = {
-  totalTrades: 234,
-  winRate: 68.5,
-  totalProfit: 12547.80,
-  activeStrategies: 3,
-  experienceLevel: 'Intermedio',
-  memberSince: 'Enero 2024'
-};
+// TODO: Estas estadísticas deberían venir del backend
+// const userStats = {
+//   totalTrades: 234,
+//   winRate: 68.5,
+//   totalProfit: 12547.80,
+//   activeStrategies: 3,
+// };
 
 export function MyProfile() {
+  const { user, updateProfile, changePassword } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
   const [userInfo, setUserInfo] = useState({
-    name: 'Juan Carlos Pérez',
-    email: 'juan.perez@email.com',
-    phone: '+1 (555) 123-4567',
-    riskTolerance: 'Medio',
-    tradingExperience: '2 años'
+    first_name: '',
+    last_name: '',
+    email: '',
+    username: '',
+    phone_number: '',
   });
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // Aquí se guardarían los cambios
+  const [passwordData, setPasswordData] = useState({
+    old_password: '',
+    new_password: '',
+    confirm_password: '',
+  });
+
+  // Cargar datos del usuario cuando el componente se monta
+  useEffect(() => {
+    if (user) {
+      setUserInfo({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        email: user.email || '',
+        username: user.username || '',
+        phone_number: user.phone_number || '',
+      });
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      await updateProfile({
+        first_name: userInfo.first_name,
+        last_name: userInfo.last_name,
+        phone_number: userInfo.phone_number,
+      });
+      setIsEditing(false);
+    } catch (error) {
+      // Error ya manejado en el contexto
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      toast.error('Las contraseñas no coinciden');
+      return;
+    }
+
+    if (passwordData.new_password.length < 8) {
+      toast.error('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await changePassword({
+        old_password: passwordData.old_password,
+        new_password: passwordData.new_password,
+      });
+      setIsChangingPassword(false);
+      setPasswordData({
+        old_password: '',
+        new_password: '',
+        confirm_password: '',
+      });
+    } catch (error) {
+      // Error ya manejado en el contexto
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="p-4 md:p-6 flex items-center justify-center min-h-[400px]">
+        <p className="text-gray-400">Cargando perfil...</p>
+      </div>
+    );
+  }
+
+  const getInitials = () => {
+    if (userInfo.first_name && userInfo.last_name) {
+      return `${userInfo.first_name[0]}${userInfo.last_name[0]}`.toUpperCase();
+    }
+    return userInfo.username.substring(0, 2).toUpperCase();
+  };
+
+  const getFullName = () => {
+    if (userInfo.first_name || userInfo.last_name) {
+      return `${userInfo.first_name} ${userInfo.last_name}`.trim();
+    }
+    return userInfo.username;
+  };
+
+  const getMemberSince = () => {
+    if (user.date_joined) {
+      const date = new Date(user.date_joined);
+      return date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    }
+    return 'Recientemente';
   };
 
   return (
@@ -53,7 +147,7 @@ export function MyProfile() {
               <Avatar className="w-24 h-24 border-4 border-emerald-500/20">
                 <AvatarImage src="" alt="Profile" />
                 <AvatarFallback className="bg-emerald-600 text-white text-xl">
-                  {userInfo.name.split(' ').map(n => n[0]).join('')}
+                  {getInitials()}
                 </AvatarFallback>
               </Avatar>
               <Button
@@ -68,14 +162,19 @@ export function MyProfile() {
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-white">{userInfo.name}</h2>
-                  <p className="text-gray-400">{userInfo.email}</p>
+                  <h2 className="text-2xl font-bold text-white">{getFullName()}</h2>
+                  <p className="text-gray-400">@{userInfo.username}</p>
+                  <p className="text-sm text-gray-500">{userInfo.email}</p>
                   <div className="flex items-center gap-4 mt-2">
-                    <Badge variant="outline" className="border-emerald-500/30 text-emerald-400">
-                      {userStats.experienceLevel}
-                    </Badge>
-                    <span className="text-sm text-gray-400">
-                      Miembro desde {userStats.memberSince}
+                    {user.is_verified && (
+                      <Badge variant="outline" className="border-emerald-500/30 text-emerald-400">
+                        <Shield className="w-3 h-3 mr-1" />
+                        Verificado
+                      </Badge>
+                    )}
+                    <span className="text-sm text-gray-400 flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      Miembro desde {getMemberSince()}
                     </span>
                   </div>
                 </div>
@@ -94,9 +193,9 @@ export function MyProfile() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Personal Information */}
-        <div className="lg:col-span-2">
+        <div>
           <Card className="bg-gray-900 border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
@@ -108,73 +207,101 @@ export function MyProfile() {
               {isEditing ? (
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-white">Nombre Completo</Label>
+                    <Label className="text-white">Nombre</Label>
                     <Input
-                      value={userInfo.name}
-                      onChange={(e) => setUserInfo(prev => ({ ...prev, name: e.target.value }))}
+                      value={userInfo.first_name}
+                      onChange={(e) => setUserInfo(prev => ({ ...prev, first_name: e.target.value }))}
                       className="bg-gray-800 border-gray-600 text-white"
+                      placeholder="Tu nombre"
                     />
+                  </div>
+                  <div>
+                    <Label className="text-white">Apellido</Label>
+                    <Input
+                      value={userInfo.last_name}
+                      onChange={(e) => setUserInfo(prev => ({ ...prev, last_name: e.target.value }))}
+                      className="bg-gray-800 border-gray-600 text-white"
+                      placeholder="Tu apellido"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-white">Username</Label>
+                    <Input
+                      value={userInfo.username}
+                      disabled
+                      className="bg-gray-800 border-gray-600 text-gray-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">El username no se puede cambiar</p>
                   </div>
                   <div>
                     <Label className="text-white">Email</Label>
                     <Input
                       value={userInfo.email}
-                      onChange={(e) => setUserInfo(prev => ({ ...prev, email: e.target.value }))}
-                      className="bg-gray-800 border-gray-600 text-white"
+                      disabled
+                      className="bg-gray-800 border-gray-600 text-gray-500"
                     />
+                    <p className="text-xs text-gray-500 mt-1">El email no se puede cambiar</p>
                   </div>
                   <div>
                     <Label className="text-white">Teléfono</Label>
                     <Input
-                      value={userInfo.phone}
-                      onChange={(e) => setUserInfo(prev => ({ ...prev, phone: e.target.value }))}
+                      value={userInfo.phone_number}
+                      onChange={(e) => setUserInfo(prev => ({ ...prev, phone_number: e.target.value }))}
                       className="bg-gray-800 border-gray-600 text-white"
+                      placeholder="+1 (555) 123-4567"
                     />
                   </div>
-                  <div>
-                    <Label className="text-white">Tolerancia al Riesgo</Label>
-                    <select 
-                      className="w-full p-2 bg-gray-800 border border-gray-600 rounded-md text-white"
-                      value={userInfo.riskTolerance}
-                      onChange={(e) => setUserInfo(prev => ({ ...prev, riskTolerance: e.target.value }))}
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleSave} 
+                      className="flex-1"
+                      disabled={isSaving}
                     >
-                      <option value="Bajo">Bajo</option>
-                      <option value="Medio">Medio</option>
-                      <option value="Alto">Alto</option>
-                    </select>
+                      {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+                    </Button>
+                    <Button 
+                      onClick={() => setIsEditing(false)} 
+                      variant="outline"
+                      className="flex-1"
+                      disabled={isSaving}
+                    >
+                      Cancelar
+                    </Button>
                   </div>
-                  <Button onClick={handleSave} className="w-full">
-                    Guardar Cambios
-                  </Button>
                 </div>
               ) : (
                 <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg">
+                    <User className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-sm text-gray-400">Nombre Completo</p>
+                      <p className="text-white">{getFullName()}</p>
+                    </div>
+                  </div>
                   <div className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg">
                     <Mail className="w-5 h-5 text-gray-400" />
                     <div>
                       <p className="text-sm text-gray-400">Email</p>
                       <p className="text-white">{userInfo.email}</p>
+                      {user.email_verified && (
+                        <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-xs mt-1">
+                          Verificado
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg">
                     <Phone className="w-5 h-5 text-gray-400" />
                     <div>
                       <p className="text-sm text-gray-400">Teléfono</p>
-                      <p className="text-white">{userInfo.phone}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg">
-                    <Target className="w-5 h-5 text-gray-400" />
-                    <div>
-                      <p className="text-sm text-gray-400">Tolerancia al Riesgo</p>
-                      <p className="text-white">{userInfo.riskTolerance}</p>
+                      <p className="text-white">{userInfo.phone_number || 'No especificado'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg">
                     <Calendar className="w-5 h-5 text-gray-400" />
                     <div>
-                      <p className="text-sm text-gray-400">Experiencia en Trading</p>
-                      <p className="text-white">{userInfo.tradingExperience}</p>
+                      <p className="text-sm text-gray-400">Miembro desde</p>
+                      <p className="text-white">{getMemberSince()}</p>
                     </div>
                   </div>
                 </div>
@@ -183,7 +310,7 @@ export function MyProfile() {
           </Card>
         </div>
 
-        {/* Trading Statistics */}
+        {/* Trading Statistics - TODO: Implementar con datos reales del backend */}
         <div>
           <Card className="bg-gray-900 border-gray-700">
             <CardHeader>
@@ -193,39 +320,13 @@ export function MyProfile() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-4 bg-emerald-900/20 border border-emerald-500/30 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-400">Beneficio Total</span>
-                  <DollarSign className="w-4 h-4 text-emerald-400" />
-                </div>
-                <p className="text-xl font-bold text-emerald-400">
-                  +${userStats.totalProfit.toLocaleString()}
+              <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-lg text-center">
+                <p className="text-sm text-gray-400">
+                  Las estadísticas de trading estarán disponibles próximamente
                 </p>
-              </div>
-
-              <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-400">Tasa de Acierto</span>
-                  <Target className="w-4 h-4 text-blue-400" />
-                </div>
-                <p className="text-xl font-bold text-blue-400">{userStats.winRate}%</p>
-                <Progress value={userStats.winRate} className="mt-2 h-2" />
-              </div>
-
-              <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-400">Total de Trades</span>
-                  <Zap className="w-4 h-4 text-purple-400" />
-                </div>
-                <p className="text-xl font-bold text-purple-400">{userStats.totalTrades}</p>
-              </div>
-
-              <div className="p-4 bg-orange-900/20 border border-orange-500/30 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-400">Estrategias Activas</span>
-                  <TrendingUp className="w-4 h-4 text-orange-400" />
-                </div>
-                <p className="text-xl font-bold text-orange-400">{userStats.activeStrategies}</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Aquí verás tu beneficio total, tasa de acierto, total de trades y estrategias activas
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -235,23 +336,104 @@ export function MyProfile() {
       {/* Account Security */}
       <Card className="bg-gray-900 border-gray-700">
         <CardHeader>
-          <CardTitle className="text-white">Seguridad de la Cuenta</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-white">
+            <Shield className="w-5 h-5" />
+            Seguridad de la Cuenta
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
-              Cambiar Contraseña
-            </Button>
-            <Button variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
-              Autenticación 2FA
-            </Button>
-            <Button variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
-              Sesiones Activas
-            </Button>
-            <Button variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
-              Historial de Acceso
-            </Button>
-          </div>
+          {isChangingPassword ? (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-white">Contraseña Actual</Label>
+                <Input
+                  type="password"
+                  value={passwordData.old_password}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, old_password: e.target.value }))}
+                  className="bg-gray-800 border-gray-600 text-white"
+                  placeholder="Tu contraseña actual"
+                />
+              </div>
+              <div>
+                <Label className="text-white">Nueva Contraseña</Label>
+                <Input
+                  type="password"
+                  value={passwordData.new_password}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, new_password: e.target.value }))}
+                  className="bg-gray-800 border-gray-600 text-white"
+                  placeholder="Mínimo 8 caracteres"
+                />
+              </div>
+              <div>
+                <Label className="text-white">Confirmar Nueva Contraseña</Label>
+                <Input
+                  type="password"
+                  value={passwordData.confirm_password}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, confirm_password: e.target.value }))}
+                  className="bg-gray-800 border-gray-600 text-white"
+                  placeholder="Repite la nueva contraseña"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleChangePassword} 
+                  className="flex-1"
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Cambiando...' : 'Cambiar Contraseña'}
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setIsChangingPassword(false);
+                    setPasswordData({ old_password: '', new_password: '', confirm_password: '' });
+                  }} 
+                  variant="outline"
+                  className="flex-1"
+                  disabled={isSaving}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button 
+                variant="outline" 
+                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                onClick={() => setIsChangingPassword(true)}
+              >
+                <Key className="w-4 h-4 mr-2" />
+                Cambiar Contraseña
+              </Button>
+              <Button 
+                variant="outline" 
+                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                disabled
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                Autenticación 2FA
+                <Badge variant="outline" className="ml-2 text-xs">Próximamente</Badge>
+              </Button>
+              <Button 
+                variant="outline" 
+                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                disabled
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                Sesiones Activas
+                <Badge variant="outline" className="ml-2 text-xs">Próximamente</Badge>
+              </Button>
+              <Button 
+                variant="outline" 
+                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                disabled
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                Historial de Acceso
+                <Badge variant="outline" className="ml-2 text-xs">Próximamente</Badge>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

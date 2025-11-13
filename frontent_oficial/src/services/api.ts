@@ -15,6 +15,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Importante para CORS con credenciales
 });
 
 // Interceptor para agregar token automáticamente
@@ -88,8 +89,23 @@ export const authService = {
   },
 
   async updateProfile(data: Partial<User>): Promise<User> {
-    const response: AxiosResponse<User> = await api.patch('/auth/profile/', data);
-    return response.data;
+    console.log('🔄 Actualizando perfil con datos:', data);
+    console.log('🔑 Token:', localStorage.getItem('access_token')?.substring(0, 20) + '...');
+    console.log('🌐 URL:', `${api.defaults.baseURL}/auth/profile/`);
+
+    try {
+      const response: AxiosResponse<User> = await api.patch('/auth/profile/', data);
+      console.log('✅ Perfil actualizado exitosamente:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Error actualizando perfil:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers,
+      });
+      throw error;
+    }
   },
 
   async changePassword(data: ChangePasswordRequest): Promise<{ message: string }> {
@@ -115,6 +131,7 @@ export const socialAuthService = {
       provider: 'google',
       access_token: accessToken,
     });
+    console.log("a");
     return response.data;
   },
 
@@ -153,7 +170,9 @@ export const googleAuth = {
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
       `scope=${encodeURIComponent(scope)}&` +
       `response_type=code&` +
-      `access_type=offline`;
+      `access_type=offline&` +
+      `prompt=select_account&` + // Fuerza mostrar selector de cuentas
+      `include_granted_scopes=true`; // Mejora la experiencia de selección
   },
 
   async handleCallback(code: string): Promise<LoginResponse> {
@@ -165,6 +184,18 @@ export const googleAuth = {
     });
 
     console.log('✅ Autenticación con Google completada exitosamente');
+    return response.data;
+  },
+
+  async handleRegister(code: string): Promise<LoginResponse> {
+    console.log('🔄 Google: Registrando nuevo usuario...');
+
+    // Enviar código al backend para registrar nuevo usuario
+    const response: AxiosResponse<LoginResponse> = await api.post('/auth/google/register/', {
+      code,
+    });
+
+    console.log('✅ Registro con Google completado exitosamente');
     return response.data;
   },
 };

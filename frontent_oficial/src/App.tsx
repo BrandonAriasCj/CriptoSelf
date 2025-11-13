@@ -16,6 +16,7 @@ import {
   BotActivity,
   Education
 } from './pages';
+import { MyProfile } from './components/MyProfile';
 import Academy from './pages/Academy';
 import AcademySimple from './pages/AcademySimple';
 import AcademyDebug from './pages/AcademyDebug';
@@ -56,7 +57,7 @@ import {
 import { cn } from './components/ui/utils';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-type Tab = 'trading' | 'portfolio' | 'strategy-builder' | 'backtest' | 'my-strategy' | 'education' | 'activity' | 'settings';
+type Tab = 'trading' | 'portfolio' | 'strategy-builder' | 'backtest' | 'my-strategy' | 'education' | 'activity' | 'settings' | 'profile';
 
 // Componente protegido que requiere autenticación
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -95,7 +96,7 @@ const MainApp: React.FC = () => {
   const getActiveTabFromPath = (pathname: string): Tab => {
     const path = pathname.substring(1); // Remover el '/' inicial
     
-    const validTabs: Tab[] = ['trading', 'portfolio', 'strategy-builder', 'backtest', 'my-strategy', 'education', 'activity', 'settings'];
+    const validTabs: Tab[] = ['trading', 'portfolio', 'strategy-builder', 'backtest', 'my-strategy', 'education', 'activity', 'settings', 'profile'];
     return validTabs.includes(path as Tab) ? (path as Tab) : 'trading';
   };
 
@@ -168,6 +169,8 @@ const MainApp: React.FC = () => {
         return <BotActivity />;
       case 'settings':
         return <Settings />;
+      case 'profile':
+        return <MyProfile />;
       default:
         return <TradingDashboard />;
     }
@@ -316,9 +319,9 @@ const MainApp: React.FC = () => {
                 </DropdownMenuLabel>
 
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleTabChange("settings")}>
+                <DropdownMenuItem onClick={() => handleTabChange("profile")}>
                   <User className="mr-2 h-4 w-4" />
-                  <span>Perfil</span>
+                  <span>Mi Perfil</span>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
@@ -385,7 +388,9 @@ const MainApp: React.FC = () => {
                                 ? "Academia de trading: aprende desde lo básico hasta estrategias avanzadas"
                                 : activeTab === "activity"
                                   ? "Monitorea la actividad y rendimiento del bot"
-                                  : "Configuración y preferencias del sistema"}
+                                  : activeTab === "profile"
+                                    ? "Tu perfil personal y configuración de cuenta"
+                                    : "Configuración y preferencias del sistema"}
                   </p>
                 </div>
 
@@ -429,9 +434,9 @@ const MainApp: React.FC = () => {
                       </DropdownMenuLabel>
 
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => handleTabChange("settings")}>
+                      <DropdownMenuItem onClick={() => handleTabChange("profile")}>
                         <User className="mr-2 h-4 w-4" />
-                        <span>Perfil</span>
+                        <span>Mi Perfil</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleTabChange("settings")}>
                         <SettingsIcon className="mr-2 h-4 w-4" />
@@ -560,6 +565,14 @@ export default function App() {
               />
               <Route
                 path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <MainApp />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
                 element={
                   <ProtectedRoute>
                     <MainApp />

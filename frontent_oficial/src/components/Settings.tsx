@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -10,22 +10,82 @@ import {
   User, 
   Bell,
   Shield,
-  Smartphone,
-  Mail,
   DollarSign
 } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
+import { useAuth } from '../contexts/AuthContext';
 
 export function Settings() {
+  const { user } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Configuración de usuario
+  const [userSettings, setUserSettings] = useState({
+    username: '',
+    email: '',
+    timezone: 'america/mexico',
+  });
+
+  // Configuración de notificaciones
   const [notifications, setNotifications] = useState(true);
   const [emailAlerts, setEmailAlerts] = useState(false);
+  
+  // Configuración de riesgo
   const [riskLevel, setRiskLevel] = useState('medium');
   const [maxPositions, setMaxPositions] = useState('5');
   const [stopLoss, setStopLoss] = useState('2');
+  
+  // Configuración de trading
+  const [tradingSettings, setTradingSettings] = useState({
+    initialCapital: '10000',
+    commission: '0.1',
+    slippage: '0.05',
+  });
 
-  const handleSave = () => {
-    toast.success('Configuración guardada exitosamente');
+  // Cargar datos del usuario
+  useEffect(() => {
+    if (user) {
+      setUserSettings({
+        username: user.username || '',
+        email: user.email || '',
+        timezone: 'america/mexico', // TODO: Agregar al modelo de usuario
+      });
+      
+      // TODO: Cargar preferencias del usuario desde el backend
+      // setNotifications(user.allow_notifications);
+      // setEmailAlerts(user.email_notifications);
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      
+      // TODO: Implementar guardado de configuración en el backend
+      // await api.post('/api/settings/', {
+      //   notifications,
+      //   emailAlerts,
+      //   riskLevel,
+      //   maxPositions,
+      //   stopLoss,
+      //   ...tradingSettings
+      // });
+      
+      toast.success('Configuración guardada exitosamente');
+    } catch (error) {
+      toast.error('Error al guardar la configuración');
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (!user) {
+    return (
+      <div className="p-4 md:p-6 flex items-center justify-center min-h-[400px]">
+        <p className="text-gray-400">Cargando configuración...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-4xl mx-auto">
@@ -57,21 +117,28 @@ export function Settings() {
             <div>
               <Label>Nombre de Usuario</Label>
               <Input
-                defaultValue="CriptoTrader"
-                className="mt-1"
+                value={userSettings.username}
+                disabled
+                className="mt-1 bg-gray-800 text-gray-500"
               />
+              <p className="text-xs text-gray-500 mt-1">El username no se puede cambiar</p>
             </div>
             <div>
               <Label>Email</Label>
               <Input
-                defaultValue="trader@example.com"
+                value={userSettings.email}
+                disabled
                 type="email"
-                className="mt-1"
+                className="mt-1 bg-gray-800 text-gray-500"
               />
+              <p className="text-xs text-gray-500 mt-1">El email no se puede cambiar</p>
             </div>
             <div>
               <Label>Zona Horaria</Label>
-              <Select defaultValue="america/mexico">
+              <Select 
+                value={userSettings.timezone} 
+                onValueChange={(value) => setUserSettings(prev => ({ ...prev, timezone: value }))}
+              >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
@@ -79,6 +146,7 @@ export function Settings() {
                   <SelectItem value="america/mexico">México (GMT-6)</SelectItem>
                   <SelectItem value="america/newyork">Nueva York (GMT-5)</SelectItem>
                   <SelectItem value="europe/london">Londres (GMT+0)</SelectItem>
+                  <SelectItem value="asia/tokyo">Tokio (GMT+9)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -173,7 +241,8 @@ export function Settings() {
             <div>
               <Label>Capital Inicial</Label>
               <Input
-                defaultValue="10000"
+                value={tradingSettings.initialCapital}
+                onChange={(e) => setTradingSettings(prev => ({ ...prev, initialCapital: e.target.value }))}
                 type="number"
                 className="mt-1"
               />
@@ -181,7 +250,8 @@ export function Settings() {
             <div>
               <Label>Comisión (%)</Label>
               <Input
-                defaultValue="0.1"
+                value={tradingSettings.commission}
+                onChange={(e) => setTradingSettings(prev => ({ ...prev, commission: e.target.value }))}
                 type="number"
                 step="0.01"
                 className="mt-1"
@@ -190,7 +260,8 @@ export function Settings() {
             <div>
               <Label>Slippage (%)</Label>
               <Input
-                defaultValue="0.05"
+                value={tradingSettings.slippage}
+                onChange={(e) => setTradingSettings(prev => ({ ...prev, slippage: e.target.value }))}
                 type="number"
                 step="0.01"
                 className="mt-1"
@@ -235,12 +306,16 @@ export function Settings() {
       </Card>
 
       {/* Save Button */}
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-4">
+        <p className="text-sm text-gray-400 self-center">
+          Nota: La configuración se guardará localmente. La sincronización con el backend estará disponible próximamente.
+        </p>
         <Button
           onClick={handleSave}
           className="bg-blue-600 hover:bg-blue-700"
+          disabled={isSaving}
         >
-          Guardar Configuración
+          {isSaving ? 'Guardando...' : 'Guardar Configuración'}
         </Button>
       </div>
     </div>
