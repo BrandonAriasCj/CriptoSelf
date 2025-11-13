@@ -79,7 +79,9 @@ export const authService = {
   },
 
   async register(data: RegisterRequest): Promise<RegisterResponse> {
+    console.log("a123")
     const response: AxiosResponse<RegisterResponse> = await api.post('/auth/register/', data);
+    console.log("b123")
     return response.data;
   },
 
