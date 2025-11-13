@@ -16,6 +16,17 @@ import {
   BotActivity,
   Education
 } from './pages';
+import { MyProfile } from './components/MyProfile';
+import Academy from './pages/Academy';
+import AcademySimple from './pages/AcademySimple';
+import AcademyDebug from './pages/AcademyDebug';
+import AcademyFixed from './pages/AcademyFixed';
+import AcademyTest from './pages/AcademyTest';
+import AcademyMinimal from './pages/AcademyMinimal';
+import AcademyComplete from './pages/AcademyComplete';
+import AcademyTest2 from './pages/AcademyTest2';
+import CategoryLessons from './pages/CategoryLessons';
+import LessonDetail from './pages/LessonDetail';
 import { Button } from './components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from './components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from './components/ui/avatar';
@@ -39,8 +50,6 @@ import {
   Menu,
   Zap,
   TrendingUp,
-  BarChart3,
-  Briefcase,
   Target,
   LogOut,
   User
@@ -48,7 +57,7 @@ import {
 import { cn } from './components/ui/utils';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-type Tab = 'trading' | 'portfolio' | 'strategy-builder' | 'backtest' | 'my-strategy' | 'education' | 'activity' | 'settings';
+type Tab = 'trading' | 'portfolio' | 'strategy-builder' | 'backtest' | 'my-strategy' | 'education' | 'activity' | 'settings' | 'profile';
 
 // Componente protegido que requiere autenticación
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -86,7 +95,8 @@ const MainApp: React.FC = () => {
   // Determinar la pestaña activa basada en la URL
   const getActiveTabFromPath = (pathname: string): Tab => {
     const path = pathname.substring(1); // Remover el '/' inicial
-    const validTabs: Tab[] = ['trading', 'portfolio', 'strategy-builder', 'backtest', 'my-strategy', 'education', 'activity', 'settings'];
+    
+    const validTabs: Tab[] = ['trading', 'portfolio', 'strategy-builder', 'backtest', 'my-strategy', 'education', 'activity', 'settings', 'profile'];
     return validTabs.includes(path as Tab) ? (path as Tab) : 'trading';
   };
 
@@ -134,14 +144,11 @@ const MainApp: React.FC = () => {
   };
 
   const tabs = [
-    /*     { id: 'portfolio' as Tab, label: 'Portfolio', icon: Briefcase },
-        { id: 'strategy-builder' as Tab, label: 'Crear Estrategia', icon: Bot },
-        { id: 'backtest' as Tab, label: 'Backtesting', icon: BarChart3 }, */
     { id: 'my-strategy' as Tab, label: 'Mis Estrategias', icon: Target },
     { id: 'trading' as Tab, label: 'Trading', icon: TrendingUp },
     { id: 'activity' as Tab, label: 'Actividad', icon: Activity },
+    { id: 'education' as Tab, label: 'Academia', icon: BookOpen },
     { id: 'settings' as Tab, label: 'Configuración', icon: SettingsIcon },
-    { id: 'education' as Tab, label: 'Formación', icon: BookOpen },
   ];
 
   const renderContent = () => {
@@ -157,11 +164,13 @@ const MainApp: React.FC = () => {
       case 'my-strategy':
         return <MyStrategy />;
       case 'education':
-        return <Education />;
+        return <AcademyComplete />;
       case 'activity':
         return <BotActivity />;
       case 'settings':
         return <Settings />;
+      case 'profile':
+        return <MyProfile />;
       default:
         return <TradingDashboard />;
     }
@@ -255,6 +264,19 @@ const MainApp: React.FC = () => {
     </>
   );
 
+  // Comentado temporalmente para debuggear
+  // if (location.pathname.startsWith('/academy')) {
+  //   return (
+  //     <div className="min-h-screen bg-background transition-theme">
+  //       <Routes>
+  //         <Route path="/academy" element={<AcademyMinimal />} />
+  //         <Route path="/academy/category/:categoryId" element={<CategoryLessons />} />
+  //         <Route path="/academy/lesson/:lessonId" element={<LessonDetail />} />
+  //       </Routes>
+  //     </div>
+  //   );
+  // }
+
   return (
     <div className="min-h-screen bg-background transition-theme">
       {/* Mobile Header */}
@@ -297,9 +319,9 @@ const MainApp: React.FC = () => {
                 </DropdownMenuLabel>
 
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleTabChange("settings")}>
+                <DropdownMenuItem onClick={() => handleTabChange("profile")}>
                   <User className="mr-2 h-4 w-4" />
-                  <span>Perfil</span>
+                  <span>Mi Perfil</span>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
@@ -363,10 +385,12 @@ const MainApp: React.FC = () => {
                             : activeTab === "my-strategy"
                               ? "Gestiona tus estrategias de trading"
                               : activeTab === "education"
-                                ? "Aprende trading cuantitativo y algorítmico"
+                                ? "Academia de trading: aprende desde lo básico hasta estrategias avanzadas"
                                 : activeTab === "activity"
                                   ? "Monitorea la actividad y rendimiento del bot"
-                                  : "Configuración y preferencias del sistema"}
+                                  : activeTab === "profile"
+                                    ? "Tu perfil personal y configuración de cuenta"
+                                    : "Configuración y preferencias del sistema"}
                   </p>
                 </div>
 
@@ -410,9 +434,9 @@ const MainApp: React.FC = () => {
                       </DropdownMenuLabel>
 
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => handleTabChange("settings")}>
+                      <DropdownMenuItem onClick={() => handleTabChange("profile")}>
                         <User className="mr-2 h-4 w-4" />
-                        <span>Perfil</span>
+                        <span>Mi Perfil</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleTabChange("settings")}>
                         <SettingsIcon className="mr-2 h-4 w-4" />
@@ -444,15 +468,15 @@ const MainApp: React.FC = () => {
       {/* Logout Confirmation Dialog */}
       <div className="p-6">
         <SimpleLogoutConfirmation
-        isOpen={showLogoutConfirmation}
-        onClose={() => setShowLogoutConfirmation(false)}
-        onConfirm={confirmLogout}
-        userName={
-          user?.first_name && user?.last_name
-            ? `${user.first_name} ${user.last_name}`
-            : user?.username
-        }
-      />
+          isOpen={showLogoutConfirmation}
+          onClose={() => setShowLogoutConfirmation(false)}
+          onConfirm={confirmLogout}
+          userName={
+            user?.first_name && user?.last_name
+              ? `${user.first_name} ${user.last_name}`
+              : user?.username
+          }
+        />
       </div>
     </div>
 
@@ -463,7 +487,7 @@ const MainApp: React.FC = () => {
 export default function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="criptoself-theme">
-      <Router>
+      <Router future={{ v7_relativeSplatPath: true }}>
         <AuthProvider>
           <div className="min-h-screen">
             <Routes>
@@ -472,7 +496,17 @@ export default function App() {
               <Route path="/auth/google/callback" element={<GoogleCallback />} />
               <Route path="/auth/github/callback" element={<GitHubCallback />} />
 
-              {/* Rutas protegidas */}
+              {/* Rutas de Academia */}
+              <Route
+                path="/academy/*"
+                element={
+                  <ProtectedRoute>
+                    <MainApp />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Rutas protegidas principales */}
               <Route
                 path="/trading"
                 element={
@@ -531,6 +565,14 @@ export default function App() {
               />
               <Route
                 path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <MainApp />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
                 element={
                   <ProtectedRoute>
                     <MainApp />
