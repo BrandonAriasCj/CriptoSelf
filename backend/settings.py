@@ -17,7 +17,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '44.205.13.131']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '44.205.13.131', '98.95.214.187', 'criptoself.com', 'api.criptoself.com']
 
 # Application definition
 INSTALLED_APPS = [
