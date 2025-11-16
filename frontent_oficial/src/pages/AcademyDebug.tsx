@@ -199,7 +199,7 @@ const AcademyDebug: React.FC = () => {
         <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-600/30">
           <h3 className="text-lg font-bold text-white mb-4">🔧 Información de Debug</h3>
           <div className="text-sm text-gray-300 space-y-2">
-            <p><strong>API Base URL:</strong> {import.meta.env.VITE_API_BASE_URL || '/api'}</p>
+            <p><strong>API Base URL:</strong> {import.meta.env.VITE_PREFIX || '/api'} en seccion api</p>
             <p><strong>Categorías cargadas:</strong> {categories.length}</p>
             <p><strong>Estado de error:</strong> {error || 'Ninguno'}</p>
             <p><strong>Estado de carga:</strong> {loading ? 'Cargando' : 'Completado'}</p>

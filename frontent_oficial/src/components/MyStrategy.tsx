@@ -41,6 +41,7 @@ const toast = {
   error: (message: string) => console.log('❌', message)
 };
 
+
 interface Trigger {
   id: string;
   type: string;
@@ -195,13 +196,17 @@ export function MyStrategy() {
     );
   };
 
+  const prefix = import.meta.env.VITE_PREFIX;
   const handleBacktest = async () => {
     setIsBacktesting(true);
     setBacktestError(null);
     setShowBacktesting(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/backtesting/run-custom/', {
+
+      console.log(prefix);
+      console.log(prefix);
+      const response = await fetch(`${prefix}/api/backtesting/run-custom/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

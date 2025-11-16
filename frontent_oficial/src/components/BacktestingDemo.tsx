@@ -20,12 +20,13 @@ export function BacktestingDemo() {
     setError(null);
 
     try {
-      let url = 'http://localhost:8000/api/backtesting/run-demo/';
+      let prefix = process.env.PREFIX_ENDPOINTS_BACKEND
+      let url = `${process.env.PREFIX_ENDPOINTS_BACKEND}/api/backtesting/run-demo/`;
       let options: RequestInit = { method: 'GET' };
 
       // Si hay configuración personalizada, usar el endpoint personalizado
       if (config) {
-        url = 'http://localhost:8000/api/backtesting/run-custom/';
+        url = `${prefix}/ai/backtesting/run-custom/`;
         options = {
           method: 'POST',
           headers: {
