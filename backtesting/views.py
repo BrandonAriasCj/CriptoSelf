@@ -177,10 +177,44 @@ def run_custom_backtesting(request):
                 'message': 'Formato de fecha inválido. Use YYYY-MM-DD'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Capturar la salida del print
+        # Logs de diagnóstico ANTES de capturar stdout
+        print("=" * 80)
+        print("🚀 INICIANDO BACKTESTING PERSONALIZADO")
+        print(f"  Symbol: {symbol}")
+        print(f"  Timeframe: {timeframe}")
+        print(f"  Fecha inicio: {fecha_inicio}")
+        print(f"  Fecha fin: {fecha_fin}")
+        print(f"  Capital inicial: {capital_inicial}")
+        print("=" * 80)
+        
+        # Generar datos ANTES del redirect_stdout
+        tiempo = f'{fecha_inicio}T00:00:00Z'
+        since = ccxt.kraken().parse8601(tiempo)
+        print(f"📡 Solicitando datos de Kraken...")
+        print(f"  Since timestamp: {since}")
+        
+        data_df = get_ccxt_data(symbol, timeframe, since)
+        
+        print(f"✅ Datos recibidos de Kraken:")
+        print(f"  Total de velas: {len(data_df)}")
+        if len(data_df) > 0:
+            print(f"  Primera fecha: {data_df.index[0]}")
+            print(f"  Última fecha: {data_df.index[-1]}")
+            print(f"  Primeras 3 velas:")
+            print(data_df.head(3))
+        else:
+            print("  ⚠️ NO SE RECIBIERON DATOS DE KRAKEN")
+            return Response({
+                'status': 'error',
+                'message': 'No se pudieron obtener datos de Kraken para el período especificado'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Capturar la salida del print solo para backtrader
         output_buffer = io.StringIO()
         
-        with redirect_stdout(output_buffer):
+        # TEMPORALMENTE DESHABILITADO para ver logs
+        # with redirect_stdout(output_buffer):
+        if True:  # Simular el with para mantener la indentación
             # Crear instancia de cerebro
             cerebro = bt.Cerebro()
             
@@ -199,35 +233,15 @@ def run_custom_backtesting(request):
                 atr_period=atr_period
             )
             cerebro.addindicator(PatronVela)
-
-            # Generar datos
-            tiempo = f'{fecha_inicio}T00:00:00Z'
-            since = ccxt.kraken().parse8601(tiempo)
-            print(f"Solicitando datos de Kraken:")
-            print(f"  Symbol: {symbol}")
-            print(f"  Timeframe: {timeframe}")
-            print(f"  Desde: {tiempo}")
-            print(f"  Since timestamp: {since}")
-            
-            data_df = get_ccxt_data(symbol, timeframe, since)
-            
-            print(f"Datos recibidos de Kraken:")
-            print(f"  Total de velas: {len(data_df)}")
-            if len(data_df) > 0:
-                print(f"  Primera fecha: {data_df.index[0]}")
-                print(f"  Última fecha: {data_df.index[-1]}")
-                print(f"  Primeras 3 velas:")
-                print(data_df.head(3))
-            else:
-                print("  ⚠️ NO SE RECIBIERON DATOS DE KRAKEN")
-
-
+            # NO FILTRAR POR FECHAS - usar todos los datos que Kraken devuelve
+            # El problema es que Kraken devuelve datos recientes, no históricos
             data = bt.feeds.PandasData(
                 dataname=data_df,
                 timeframe=bt.TimeFrame.Minutes,
-                compression=5,
-                fromdate=fecha_inicio_dt,
-                todate=fecha_fin_dt
+                compression=5
+                # fromdate y todate comentados para usar todos los datos disponibles
+                # fromdate=fecha_inicio_dt,
+                # todate=fecha_fin_dt
             )
 
             cerebro.adddata(data)
@@ -269,24 +283,72 @@ def run_custom_backtesting(request):
                 print("=" * 80)
                 raise
 
-            import winsound; winsound.Beep(1000, 500);
+            #import winsound; winsound.Beep(500, 500);
 
             data = cerebro.datas[0]
             estrategia = cerebro.runstrats[0][0]
 
             # Extraer datos correctamente de las líneas de Backtrader
-            fechas = [bt.num2date(x) for x in data.lines.datetime.array]
-            precios = list(data.lines.close.array)
-            indi = list(estrategia.patronVela1.lines.status.array)
-            volma = list(estrategia.vol_ma.lines.sma.array)
+            print("Extrayendo datos del backtesting...")
+            
+            # IMPORTANTE: Usar get() en lugar de array para obtener todos los datos
+            fechas = []
+            precios = []
+            indi = []
+            volma = []
+            
+            # Iterar sobre todos los datos disponibles
+            for i in range(len(data)):
+                try:
+                    fechas.append(bt.num2date(data.datetime[i]))
+                    precios.append(data.close[i])
+                    
+                    # Intentar obtener el indicador si existe
+                    try:
+                        indi.append(estrategia.patronVela1.lines.status[i])
+                    except:
+                        indi.append(0)
+                    
+                    # Intentar obtener el volumen MA si existe
+                    try:
+                        volma.append(estrategia.vol_ma.lines.sma[i])
+                    except:
+                        volma.append(None)
+                except:
+                    break
+            
             historico_vol_max = list(estrategia.vol_ma_values)
             datas_close_list = list(estrategia.datas_close)
             
+            print(f"Datos extraídos del loop:")
+            print(f"  Fechas: {len(fechas)}")
+            print(f"  Precios: {len(precios)}")
+            print(f"  Indicador: {len(indi)}")
+            print(f"  Volumen MA: {len(volma)}")
+            print(f"  Historial: {len(historico_vol_max)}")
+            print(f"  Datas closed: {len(datas_close_list)}")
+            
+            # USAR LOS DATOS GUARDADOS POR LA ESTRATEGIA
+            if len(datas_close_list) > len(precios):
+                print(f"⚠️ Usando datos guardados por la estrategia en lugar del loop")
+                precios = datas_close_list
+                volma = historico_vol_max
+                indi = [0] * len(precios)  # Indicador por defecto
+                
+                # Generar fechas desde el DataFrame
+                fechas = [fecha.to_pydatetime() for fecha in data_df.index[:len(precios)]]
+                
+                print(f"✅ Datos corregidos:")
+                print(f"  Fechas: {len(fechas)}")
+                print(f"  Precios: {len(precios)}")
+                print(f"  Indicador: {len(indi)}")
+                print(f"  Volumen MA: {len(volma)}")
+            
             # Convertir NaN a None para JSON válido
             import math
-            indi_clean = [None if (isinstance(x, float) and math.isnan(x)) else x for x in indi]
-            volma_clean = [None if (isinstance(x, float) and math.isnan(x)) else x for x in volma]
-            precios_clean = [None if (isinstance(x, float) and math.isnan(x)) else x for x in precios]
+            indi_clean = [None if (isinstance(x, float) and math.isnan(x)) else float(x) if x is not None else 0 for x in indi]
+            volma_clean = [None if (isinstance(x, float) and math.isnan(x)) else float(x) if x is not None else None for x in volma]
+            precios_clean = [None if (isinstance(x, float) and math.isnan(x)) else float(x) if x is not None else None for x in precios]
 
 
             capital_final = cerebro.broker.getvalue()
