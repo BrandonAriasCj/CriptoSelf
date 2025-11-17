@@ -186,8 +186,8 @@ class ScalpingStrategy(bt.Strategy):
                 print(f"📅 Fecha: {self.data.datetime.date(0)}, Resultado: {round(resultado, 3)}")
 
 # Función para descargar datos
-def get_ccxt_data(symbol, timeframe, since, limit=1000000):
-    exchange = ccxt.binance()
+def get_ccxt_data(symbol, timeframe, since, limit=100000):    
+    exchange = ccxt.kraken()
     ohlcv = exchange.fetch_ohlcv(symbol, timeframe, since, limit)
     df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
     df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
@@ -206,7 +206,7 @@ if __name__ == '__main__':
             symbol = 'BTC/USDT'
             timeframe = timefr
             tiempo = time
-            since = ccxt.binance().parse8601(tiempo)
+            since = ccxt.kraken().parse8601(tiempo)
             data_df = get_ccxt_data(symbol, timeframe, since)
 
             data = bt.feeds.PandasData(

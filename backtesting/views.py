@@ -39,7 +39,7 @@ def run_backtesting_demo(request):
             symbol = 'BTC/USDT'
             timeframe = '5m'
             tiempo = '2025-01-01T00:00:00Z'
-            since = ccxt.binance().parse8601(tiempo)
+            since = ccxt.kraken().parse8601(tiempo)
             data_df = get_ccxt_data(symbol, timeframe, since)
 
             data = bt.feeds.PandasData(
@@ -148,6 +148,7 @@ def run_custom_backtesting(request):
     try:
         # Obtener parámetros del request
         data = request.data
+        #print(data)
         symbol = data.get('symbol', 'BTC/USDT')
         timeframe = data.get('timeframe', '5m')
         fecha_inicio = data.get('fecha_inicio', '2025-01-01')
@@ -204,6 +205,7 @@ def run_custom_backtesting(request):
             since = ccxt.kraken().parse8601(tiempo)
             data_df = get_ccxt_data(symbol, timeframe, since)
 
+
             data = bt.feeds.PandasData(
                 dataname=data_df,
                 timeframe=bt.TimeFrame.Minutes,
@@ -219,7 +221,15 @@ def run_custom_backtesting(request):
             print(f"Capital inicial: {capital_inicial_real:.2f}")
             
             # Ejecutar backtesting
-            instancia = cerebro.run()[0]
+            try:
+                instancia = cerebro.run()[0]
+                print("Backtest terminado correctamente.")
+            except Exception as e:
+                print("ERROR EN BACKTRADER:")
+                print(e)
+                import traceback; traceback.print_exc()
+
+            #import winsound; winsound.Beep(1000, 500);
 
             data = cerebro.datas[0]
             estrategia = cerebro.runstrats[0][0]
