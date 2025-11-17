@@ -201,7 +201,7 @@ def run_custom_backtesting(request):
 
             # Generar datos
             tiempo = f'{fecha_inicio}T00:00:00Z'
-            since = ccxt.binance().parse8601(tiempo)
+            since = ccxt.kraken().parse8601(tiempo)
             data_df = get_ccxt_data(symbol, timeframe, since)
 
             data = bt.feeds.PandasData(

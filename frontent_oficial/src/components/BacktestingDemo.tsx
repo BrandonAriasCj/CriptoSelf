@@ -20,6 +20,7 @@ export function BacktestingDemo() {
     setError(null);
 
     try {
+      console.log("Pasa por backesting demo, uno diferente");
       let prefix = process.env.PREFIX_ENDPOINTS_BACKEND
       let url = `${process.env.PREFIX_ENDPOINTS_BACKEND}/api/backtesting/run-demo/`;
       let options: RequestInit = { method: 'GET' };
