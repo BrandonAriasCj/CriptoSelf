@@ -219,14 +219,49 @@ class ScalpingStrategy(bt.Strategy):
                 self.loss_streak += 1
                 print(f"📅 Fecha: {self.data.datetime.date(0)}, Resultado: {round(resultado, 3)}")
 
-# Función para descargar datos
+# Función para descargar datos con múltiples llamadas si es necesario
 def get_ccxt_data(symbol, timeframe, since, limit=100000):    
     exchange = ccxt.kraken()
-    ohlcv = exchange.fetch_ohlcv(symbol, timeframe, since, limit)
-    df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+    
+    # Kraken limita a ~720 velas por llamada
+    # Para obtener más datos, hacemos múltiples llamadas
+    all_ohlcv = []
+    current_since = since
+    max_iterations = 10  # Máximo 10 llamadas = ~7200 velas
+    
+    for i in range(max_iterations):
+        try:
+            ohlcv = exchange.fetch_ohlcv(symbol, timeframe, current_since, 720)
+            
+            if not ohlcv or len(ohlcv) == 0:
+                break
+            
+            all_ohlcv.extend(ohlcv)
+            
+            # Si obtuvimos menos de 720, ya no hay más datos
+            if len(ohlcv) < 720:
+                break
+            
+            # Actualizar 'since' para la siguiente llamada
+            current_since = ohlcv[-1][0] + 1  # timestamp de la última vela + 1ms
+            
+            print(f"  Descargadas {len(all_ohlcv)} velas hasta ahora...")
+            
+        except Exception as e:
+            print(f"  Error descargando más datos: {e}")
+            break
+    
+    if not all_ohlcv:
+        print("  ⚠️ No se pudieron obtener datos")
+        return pd.DataFrame()
+    
+    df = pd.DataFrame(all_ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
     df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
     df.set_index('timestamp', inplace=True)
-    #print(df)
+    
+    # Eliminar duplicados si los hay
+    df = df[~df.index.duplicated(keep='first')]
+    
     return df
 
 # Configuración y ejecución

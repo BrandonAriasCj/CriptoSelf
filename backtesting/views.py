@@ -333,7 +333,23 @@ def run_custom_backtesting(request):
                 print(f"⚠️ Usando datos guardados por la estrategia en lugar del loop")
                 precios = datas_close_list
                 volma = historico_vol_max
-                indi = [0] * len(precios)  # Indicador por defecto
+                
+                # Intentar extraer el indicador correctamente
+                indi = []
+                try:
+                    # Acceder al indicador desde la estrategia
+                    for i in range(len(precios)):
+                        try:
+                            valor = estrategia.patronVela1.lines.status[i]
+                            indi.append(float(valor) if valor is not None else 0)
+                        except:
+                            indi.append(0)
+                    
+                    patrones_encontrados = sum(1 for x in indi if x > 0)
+                    print(f"📊 Patrones encontrados: {patrones_encontrados} de {len(indi)}")
+                except Exception as e:
+                    print(f"⚠️ Error extrayendo indicador: {e}")
+                    indi = [0] * len(precios)
                 
                 # Generar fechas desde el DataFrame
                 fechas = [fecha.to_pydatetime() for fecha in data_df.index[:len(precios)]]
