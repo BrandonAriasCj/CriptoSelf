@@ -13,46 +13,73 @@ class PatronVela(bt.Indicator):
     plotlines = dict(
         maxima=dict(marker='^', markersize=8.0, color='blue', fillstyle='full')  # Flecha hacia arriba en los máximos
     )
+    
+    # Deshabilitar modo optimizado para evitar problemas con arrays
+    _mindatas = 1
+    _nextforce = True  # Forzar uso de next() en lugar de once()
 
     def __init__(self):
-        self.addminperiod(3)  # Necesitamos al menos 3 velas para evaluar un máximo
+        self.addminperiod(4)  # Necesitamos al menos 4 velas para evaluar el patrón (accedemos a -3)
             
     def dibujarSigno(self, pos):
         self.lines.maxima[pos] = self.data.high[pos]
     
 
     def isVPositiva(self, pos):
-        if self.data.close[pos] > self.data.open[pos]:
-            return True
-        elif self.data.close[pos] < self.data.open[pos]:
+        try:
+            if self.data.close[pos] > self.data.open[pos]:
+                return True
+            elif self.data.close[pos] < self.data.open[pos]:
+                return False
+            return False
+        except IndexError:
             return False
     def isNeutral(self, pos):
-        if self.data.close[pos] == self.data.open[pos]:
-            return True
-        else:
+        try:
+            if self.data.close[pos] == self.data.open[pos]:
+                return True
+            else:
+                return False
+        except IndexError:
             return False
         
     def diff_OpenClose(self, pos):
-        diferencia = abs(self.data.open[pos] - self.data.close[pos])
-        return diferencia
+        try:
+            diferencia = abs(self.data.open[pos] - self.data.close[pos])
+            return diferencia
+        except IndexError:
+            return 0
     
     def diff_LowHigh(self, pos):
-        diferencia = abs(self.data.low[pos] - self.data.high[pos])
-        return diferencia
+        try:
+            diferencia = abs(self.data.low[pos] - self.data.high[pos])
+            return diferencia
+        except IndexError:
+            return 0
     
     def sombraSuperior(self, pos):
-        if self.isVPositiva(pos):
-            sombra = abs(self.data.high[pos] - self.data.close[pos])
-        elif not self.isVPositiva(pos):
-            sombra = abs(self.data.high[pos] - self.data.open[pos])
-        return sombra
+        try:
+            if self.isVPositiva(pos):
+                sombra = abs(self.data.high[pos] - self.data.close[pos])
+            elif not self.isVPositiva(pos):
+                sombra = abs(self.data.high[pos] - self.data.open[pos])
+            else:
+                sombra = 0
+            return sombra
+        except IndexError:
+            return 0
     
     def sombraInferior(self, pos):
-        if self.isVPositiva(pos):
-            sombra = abs(self.data.open[pos] - self.data.low[pos])
-        elif not self.isVPositiva(pos):
-            sombra = abs(self.data.close[pos] - self.data.low[pos])
-        return sombra
+        try:
+            if self.isVPositiva(pos):
+                sombra = abs(self.data.open[pos] - self.data.low[pos])
+            elif not self.isVPositiva(pos):
+                sombra = abs(self.data.close[pos] - self.data.low[pos])
+            else:
+                sombra = 0
+            return sombra
+        except IndexError:
+            return 0
 
     # Detecta patron de 2 velas, positiva y negativa respectivamente, en donde
     # el cuerpo de la segunda es el doble que el curpo de la primera
@@ -68,6 +95,15 @@ class PatronVela(bt.Indicator):
     # Detecta patron de 3 velas donde las dos anteriores son positivas
     # Y la tercera es negativa pero envuelve a las 2 anteriores
     def next(self):
+        # Valores por defecto
+        self.lines.maxima[0] = float('nan')
+        self.lines.status[0] = 0
+        
+        # Verificar que tenemos suficientes datos (al menos 4 velas)
+        if len(self.data) < 4:
+            return
+        
+        # Evaluar el patrón
         if (self.isVPositiva(-3) and
             self.isVPositiva(-2) and
             self.isVPositiva(-1) and
@@ -77,8 +113,6 @@ class PatronVela(bt.Indicator):
             
             self.dibujarSigno(0)
             self.lines.status[0] = 1
-        else:
-            self.lines.status[0] = 0
 
     # Detecta velas con poco curpo en relacion a su rango de low - high
     def next3(self):

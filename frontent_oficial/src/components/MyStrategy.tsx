@@ -122,8 +122,8 @@ interface BacktestingConfig {
 const defaultBacktestConfig: BacktestingConfig = {
   symbol: 'BTC/USDT',
   timeframe: '5m',
-  fecha_inicio: '2025-01-01',
-  fecha_fin: '2025-09-05',
+  fecha_inicio: '2024-01-01',
+  fecha_fin: '2024-11-01',
   capital_inicial: 1000,
   ema_fast: 9,
   ema_slow: 21,

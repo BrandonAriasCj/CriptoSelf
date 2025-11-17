@@ -203,7 +203,23 @@ def run_custom_backtesting(request):
             # Generar datos
             tiempo = f'{fecha_inicio}T00:00:00Z'
             since = ccxt.kraken().parse8601(tiempo)
+            print(f"Solicitando datos de Kraken:")
+            print(f"  Symbol: {symbol}")
+            print(f"  Timeframe: {timeframe}")
+            print(f"  Desde: {tiempo}")
+            print(f"  Since timestamp: {since}")
+            
             data_df = get_ccxt_data(symbol, timeframe, since)
+            
+            print(f"Datos recibidos de Kraken:")
+            print(f"  Total de velas: {len(data_df)}")
+            if len(data_df) > 0:
+                print(f"  Primera fecha: {data_df.index[0]}")
+                print(f"  Última fecha: {data_df.index[-1]}")
+                print(f"  Primeras 3 velas:")
+                print(data_df.head(3))
+            else:
+                print("  ⚠️ NO SE RECIBIERON DATOS DE KRAKEN")
 
 
             data = bt.feeds.PandasData(
@@ -222,14 +238,38 @@ def run_custom_backtesting(request):
             
             # Ejecutar backtesting
             try:
+                print(f"Iniciando backtesting con {len(data_df)} velas de datos")
+                print(f"Rango de fechas: {data_df.index[0]} a {data_df.index[-1]}")
+                print(f"Primeras 5 velas:")
+                print(data_df.head())
+                
                 instancia = cerebro.run()[0]
                 print("Backtest terminado correctamente.")
+            except IndexError as e:
+                print("=" * 80)
+                print("ERROR DE ÍNDICE EN BACKTRADER:")
+                print(f"Mensaje: {e}")
+                print(f"Datos disponibles: {len(data_df)} velas")
+                print(f"Configuración:")
+                print(f"  - Symbol: {symbol}")
+                print(f"  - Timeframe: {timeframe}")
+                print(f"  - Fecha inicio: {fecha_inicio}")
+                print(f"  - Fecha fin: {fecha_fin}")
+                import traceback
+                traceback.print_exc()
+                print("=" * 80)
+                raise
             except Exception as e:
-                print("ERROR EN BACKTRADER:")
-                print(e)
-                import traceback; traceback.print_exc()
+                print("=" * 80)
+                print("ERROR GENERAL EN BACKTRADER:")
+                print(f"Tipo: {type(e).__name__}")
+                print(f"Mensaje: {e}")
+                import traceback
+                traceback.print_exc()
+                print("=" * 80)
+                raise
 
-            #import winsound; winsound.Beep(1000, 500);
+            import winsound; winsound.Beep(1000, 500);
 
             data = cerebro.datas[0]
             estrategia = cerebro.runstrats[0][0]
