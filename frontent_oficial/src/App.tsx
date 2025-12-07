@@ -95,7 +95,7 @@ const MainApp: React.FC = () => {
   // Determinar la pestaña activa basada en la URL
   const getActiveTabFromPath = (pathname: string): Tab => {
     const path = pathname.substring(1); // Remover el '/' inicial
-    
+
     const validTabs: Tab[] = ['trading', 'portfolio', 'strategy-builder', 'backtest', 'my-strategy', 'education', 'activity', 'settings', 'profile'];
     return validTabs.includes(path as Tab) ? (path as Tab) : 'trading';
   };
@@ -192,7 +192,7 @@ const MainApp: React.FC = () => {
             <h1 className="text-xl font-bold text-primary-adaptive">
               CriptoSelf
             </h1>
-            <p className="text-sm text-secondary-adaptive">Trading Automatizado Inteligente</p>
+            <p className="text-sm text-secondary-adaptive">Simulador de cripto-inversiones</p>
           </div>
         </div>
       </div>
