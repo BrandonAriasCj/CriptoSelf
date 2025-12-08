@@ -192,7 +192,7 @@ const MainApp: React.FC = () => {
             <h1 className="text-xl font-bold text-primary-adaptive">
               CriptoSelf
             </h1>
-            <p className="text-sm text-secondary-adaptive">Simulador de cripto-inversiones</p>
+            <p className="text-sm text-secondary-adaptive">Simulador de cripto</p>
           </div>
         </div>
       </div>
