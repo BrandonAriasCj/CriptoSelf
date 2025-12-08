@@ -9,11 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { TradingChart } from './TradingChart';
 import { BacktestingChart } from './BacktestingChart';
 import { SimpleBacktestingChart } from './SimpleBacktestingChart';
-import { 
-  Bot, 
-  Plus, 
-  Trash2, 
-  Play, 
+import {
+  Bot,
+  Plus,
+  Trash2,
+  Play,
   Pause,
   TrendingUp,
   Activity,
@@ -33,6 +33,7 @@ import {
   ChevronUp,
   LineChart
 } from 'lucide-react';
+import { ErrorBoundary } from './ErrorBoundary';
 // import { toast } from 'sonner';
 
 // Función temporal para toast hasta que se configure correctamente
@@ -181,15 +182,15 @@ export function MyStrategy() {
   };
 
   const toggleTrigger = (id: string) => {
-    setActiveTriggers(prev => 
+    setActiveTriggers(prev =>
       prev.map(t => t.id === id ? { ...t, enabled: !t.enabled } : t)
     );
   };
 
   const updateTriggerParam = (id: string, param: string, value: any) => {
     setActiveTriggers(prev =>
-      prev.map(t => 
-        t.id === id 
+      prev.map(t =>
+        t.id === id
           ? { ...t, params: { ...t.params, [param]: value } }
           : t
       )
@@ -261,7 +262,7 @@ export function MyStrategy() {
         risk_per_trade: 0.01
       }
     };
-    
+
     setBacktestConfig(presets[preset]);
     toast.success(`Preset ${preset} aplicado`);
   };
@@ -394,11 +395,10 @@ export function MyStrategy() {
                     key={id}
                     variant="ghost"
                     onClick={() => setConfigTab(id as any)}
-                    className={`flex items-center gap-2 border-b-2 rounded-none ${
-                      configTab === id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent'
-                    }`}
+                    className={`flex items-center gap-2 border-b-2 rounded-none ${configTab === id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent'
+                      }`}
                   >
                     <Icon className="w-4 h-4" />
                     {label}
@@ -734,11 +734,15 @@ export function MyStrategy() {
                 </div>
               </CardHeader>
               <CardContent>
-                {chartView === 'detailed' ? (
-                  <BacktestingChart data={backtestData} />
-                ) : (
-                  <SimpleBacktestingChart data={backtestData} />
-                )}
+                <div className="min-h-[500px]">
+                  <ErrorBoundary>
+                    {chartView === 'detailed' ? (
+                      <BacktestingChart data={backtestData} />
+                    ) : (
+                      <SimpleBacktestingChart data={backtestData} />
+                    )}
+                  </ErrorBoundary>
+                </div>
               </CardContent>
             </Card>
 
@@ -764,7 +768,7 @@ export function MyStrategy() {
                     </div>
                     <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
                       <p className="text-2xl font-bold text-green-600">
-                        {backtestData.patronVela ? 
+                        {backtestData.patronVela ?
                           ((backtestData.patronVela.filter((p: any) => p > 0).length / backtestData.patronVela.length) * 100).toFixed(1)
                           : '0.0'
                         }%
@@ -852,8 +856,8 @@ export function MyStrategy() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Label>Estado:</Label>
-                <Switch 
-                  checked={isActive} 
+                <Switch
+                  checked={isActive}
                   onCheckedChange={setIsActive}
                 />
                 <Badge className={isActive ? 'bg-green-600' : 'bg-gray-600'}>
@@ -874,7 +878,7 @@ export function MyStrategy() {
               />
             </div>
             <div className="flex gap-2 items-end">
-              <Button 
+              <Button
                 onClick={handleBacktest}
                 className="bg-blue-600 hover:bg-blue-700"
               >
@@ -944,8 +948,8 @@ export function MyStrategy() {
                                 type={typeof value === 'number' ? 'number' : 'text'}
                                 value={value}
                                 onChange={(e) => updateTriggerParam(
-                                  trigger.id, 
-                                  key, 
+                                  trigger.id,
+                                  key,
                                   typeof value === 'number' ? parseFloat(e.target.value) : e.target.value
                                 )}
                                 className="text-sm h-8"
@@ -981,7 +985,7 @@ export function MyStrategy() {
               {availableTriggers.map((trigger) => {
                 const Icon = trigger.icon;
                 const isAdded = activeTriggers.some(t => t.type === trigger.type);
-                
+
                 return (
                   <Button
                     key={trigger.type}

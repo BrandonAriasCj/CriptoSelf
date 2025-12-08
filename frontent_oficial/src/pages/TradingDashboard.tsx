@@ -5,12 +5,12 @@ import { OrderBook } from '../components/OrderBook';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Activity, 
-  Zap, 
-  BarChart3, 
+import {
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Zap,
+  BarChart3,
   DollarSign,
   Play,
   Pause,
@@ -93,7 +93,7 @@ export function TradingDashboard() {
     unrealizedPnL: 0,
     realizedPnL: 0
   });
-  
+
   // Trading form state
   const [orderType, setOrderType] = useState<'market' | 'limit' | 'stop'>('market');
   const [orderSide, setOrderSide] = useState<'buy' | 'sell'>('buy');
@@ -102,8 +102,8 @@ export function TradingDashboard() {
   const [leverage, setLeverage] = useState<number>(1);
   const [stopLoss, setStopLoss] = useState<number | undefined>();
   const [takeProfit, setTakeProfit] = useState<number | undefined>();
-  
-  const [notifications, setNotifications] = useState<Array<{id: string, type: 'success' | 'error' | 'warning', message: string}>>([]);
+
+  const [notifications, setNotifications] = useState<Array<{ id: string, type: 'success' | 'error' | 'warning', message: string }>>([]);
   const wsRef = useRef<WebSocket | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
 
@@ -113,7 +113,7 @@ export function TradingDashboard() {
       setConnectionStatus('connecting');
       // Simular WebSocket con datos reales
       const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@ticker');
-      
+
       ws.onopen = () => {
         setConnectionStatus('connected');
         addNotification('success', '🟢 Conectado al feed en tiempo real');
@@ -178,12 +178,12 @@ export function TradingDashboard() {
   const updatePositionsPnL = (price: number) => {
     setPositions(prev => prev.map(position => {
       if (position.status === 'open' && position.pair === selectedPair) {
-        const priceDiff = position.type === 'long' 
-          ? price - position.entryPrice 
+        const priceDiff = position.type === 'long'
+          ? price - position.entryPrice
           : position.entryPrice - price;
-        
+
         const unrealizedPnL = (priceDiff * position.size * position.leverage);
-        
+
         return {
           ...position,
           unrealizedPnL
@@ -196,7 +196,7 @@ export function TradingDashboard() {
     const totalUnrealizedPnL = positions
       .filter(p => p.status === 'open')
       .reduce((sum, p) => sum + p.unrealizedPnL, 0);
-    
+
     setAccount(prev => ({
       ...prev,
       unrealizedPnL: totalUnrealizedPnL,
@@ -236,7 +236,7 @@ export function TradingDashboard() {
     };
 
     setPositions(prev => [...prev, position]);
-    
+
     // Update account
     setAccount(prev => ({
       ...prev,
@@ -245,7 +245,7 @@ export function TradingDashboard() {
     }));
 
     const leverageText = leverage > 1 ? ` (${leverage}x)` : '';
-    addNotification('success', 
+    addNotification('success',
       `✅ ${position.type.toUpperCase()} ${orderSize} ${selectedPair}${leverageText} @ $${position.entryPrice.toFixed(2)}`
     );
 
@@ -260,14 +260,14 @@ export function TradingDashboard() {
     const position = positions.find(p => p.id === positionId);
     if (!position || position.status === 'closed') return;
 
-    const priceDiff = position.type === 'long' 
-      ? currentPrice - position.entryPrice 
+    const priceDiff = position.type === 'long'
+      ? currentPrice - position.entryPrice
       : position.entryPrice - currentPrice;
-    
+
     const realizedPnL = (priceDiff * position.size * position.leverage);
 
-    setPositions(prev => prev.map(p => 
-      p.id === positionId 
+    setPositions(prev => prev.map(p =>
+      p.id === positionId
         ? { ...p, status: 'closed' as const, pnl: realizedPnL, unrealizedPnL: 0 }
         : p
     ));
@@ -317,7 +317,7 @@ export function TradingDashboard() {
   // Calculate margin level
   const marginLevel = account.margin > 0 ? (account.equity / account.margin) * 100 : 0;
 
-  const priceChange = priceHistory.length >= 2 
+  const priceChange = priceHistory.length >= 2
     ? ((currentPrice - priceHistory[priceHistory.length - 2]) / priceHistory[priceHistory.length - 2]) * 100
     : ((currentPrice - marketData[selectedPair].price) / marketData[selectedPair].price) * 100;
 
@@ -443,8 +443,8 @@ export function TradingDashboard() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <PriceChart 
-                selectedPair={selectedPair} 
+              <PriceChart
+                selectedPair={selectedPair}
                 positions={positions}
                 currentPrice={currentPrice}
               />
@@ -469,12 +469,12 @@ export function TradingDashboard() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge 
+                  <Badge
                     variant={connectionStatus === 'connected' ? 'default' : 'destructive'}
                     className={connectionStatus === 'connected' ? 'bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/20' : ''}
                   >
-                    {connectionStatus === 'connected' ? '🟢 En Vivo' : 
-                     connectionStatus === 'connecting' ? '🟡 Conectando...' : '🔴 Desconectado'}
+                    {connectionStatus === 'connected' ? '🟢 En Vivo' :
+                      connectionStatus === 'connecting' ? '🟡 Conectando...' : '🔴 Desconectado'}
                   </Badge>
                   <Button onClick={resetAccount} variant="outline">
                     <RotateCcw className="w-4 h-4 mr-2" />
@@ -687,23 +687,23 @@ export function TradingDashboard() {
               </CardContent>
             </Card>
 
-            <Card className={`bg-card/50 backdrop-blur-sm ${account.totalPnL >= 0 
-              ? 'border-purple-500/20' 
+            <Card className={`bg-card/50 backdrop-blur-sm ${account.totalPnL >= 0
+              ? 'border-purple-500/20'
               : 'border-red-500/20'}`}>
               <CardContent className="p-4 flex items-center gap-3">
-                <div className={`p-2 rounded-lg backdrop-blur-sm ${account.totalPnL >= 0 
-                  ? 'bg-purple-500/10' 
+                <div className={`p-2 rounded-lg backdrop-blur-sm ${account.totalPnL >= 0
+                  ? 'bg-purple-500/10'
                   : 'bg-red-500/10'}`}>
                   <TrendingUpDown className={`w-5 h-5 ${account.totalPnL >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400'}`} />
                 </div>
                 <div>
-                  <p className={`text-sm ${account.totalPnL >= 0 
-                    ? 'text-purple-700 dark:text-purple-300' 
+                  <p className={`text-sm ${account.totalPnL >= 0
+                    ? 'text-purple-700 dark:text-purple-300'
                     : 'text-red-700 dark:text-red-300'}`}>
                     P&L Total
                   </p>
-                  <p className={`font-bold ${account.totalPnL >= 0 
-                    ? 'text-purple-700 dark:text-purple-300' 
+                  <p className={`font-bold ${account.totalPnL >= 0
+                    ? 'text-purple-700 dark:text-purple-300'
                     : 'text-red-700 dark:text-red-300'}`}>
                     {account.totalPnL >= 0 ? '+' : ''}${account.totalPnL.toFixed(2)}
                   </p>
@@ -714,36 +714,36 @@ export function TradingDashboard() {
               </CardContent>
             </Card>
 
-            <Card className={`bg-card/50 backdrop-blur-sm ${marginLevel > 200 
+            <Card className={`bg-card/50 backdrop-blur-sm ${marginLevel > 200
               ? 'border-green-500/20'
-              : marginLevel > 100 
-              ? 'border-yellow-500/20'
-              : 'border-red-500/20'}`}>
+              : marginLevel > 100
+                ? 'border-yellow-500/20'
+                : 'border-red-500/20'}`}>
               <CardContent className="p-4 flex items-center gap-3">
-                <div className={`p-2 rounded-lg backdrop-blur-sm ${marginLevel > 200 
+                <div className={`p-2 rounded-lg backdrop-blur-sm ${marginLevel > 200
                   ? 'bg-green-500/10'
-                  : marginLevel > 100 
-                  ? 'bg-yellow-500/10'
-                  : 'bg-red-500/10'}`}>
-                  <AlertTriangle className={`w-5 h-5 ${marginLevel > 200 
+                  : marginLevel > 100
+                    ? 'bg-yellow-500/10'
+                    : 'bg-red-500/10'}`}>
+                  <AlertTriangle className={`w-5 h-5 ${marginLevel > 200
                     ? 'text-green-600 dark:text-green-400'
-                    : marginLevel > 100 
-                    ? 'text-yellow-600 dark:text-yellow-400'
-                    : 'text-red-600 dark:text-red-400'}`} />
+                    : marginLevel > 100
+                      ? 'text-yellow-600 dark:text-yellow-400'
+                      : 'text-red-600 dark:text-red-400'}`} />
                 </div>
                 <div>
-                  <p className={`text-sm ${marginLevel > 200 
+                  <p className={`text-sm ${marginLevel > 200
                     ? 'text-green-700 dark:text-green-300'
-                    : marginLevel > 100 
-                    ? 'text-yellow-700 dark:text-yellow-300'
-                    : 'text-red-700 dark:text-red-300'}`}>
+                    : marginLevel > 100
+                      ? 'text-yellow-700 dark:text-yellow-300'
+                      : 'text-red-700 dark:text-red-300'}`}>
                     Nivel de Margen
                   </p>
-                  <p className={`font-bold ${marginLevel > 200 
+                  <p className={`font-bold ${marginLevel > 200
                     ? 'text-green-700 dark:text-green-300'
-                    : marginLevel > 100 
-                    ? 'text-yellow-700 dark:text-yellow-300'
-                    : 'text-red-700 dark:text-red-300'}`}>
+                    : marginLevel > 100
+                      ? 'text-yellow-700 dark:text-yellow-300'
+                      : 'text-red-700 dark:text-red-300'}`}>
                     {marginLevel.toFixed(0)}%
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -777,8 +777,8 @@ export function TradingDashboard() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
                           <div className={`p-1 rounded backdrop-blur-sm ${position.type === 'long' ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
-                            {position.type === 'long' ? 
-                              <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" /> : 
+                            {position.type === 'long' ?
+                              <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" /> :
                               <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />
                             }
                           </div>
@@ -801,7 +801,7 @@ export function TradingDashboard() {
                           Cerrar
                         </Button>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-4 text-xs">
                         <div>
                           <p className="text-muted-foreground">P&L No Realizado</p>
@@ -854,8 +854,8 @@ export function TradingDashboard() {
                     <div key={position.id} className="flex items-center justify-between p-2 bg-muted/20 backdrop-blur-sm rounded border border-border/30">
                       <div className="flex items-center gap-2">
                         <div className={`p-1 rounded backdrop-blur-sm ${position.type === 'long' ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
-                          {position.type === 'long' ? 
-                            <TrendingUp className="w-3 h-3 text-green-600 dark:text-green-400" /> : 
+                          {position.type === 'long' ?
+                            <TrendingUp className="w-3 h-3 text-green-600 dark:text-green-400" /> :
                             <TrendingDown className="w-3 h-3 text-red-600 dark:text-red-400" />
                           }
                         </div>
@@ -882,11 +882,10 @@ export function TradingDashboard() {
           {notifications.length > 0 && (
             <div className="fixed top-4 right-4 z-50 space-y-2">
               {notifications.map((notification) => (
-                <Card key={notification.id} className={`w-80 ${
-                  notification.type === 'success' ? 'border-green-500 bg-green-50 dark:bg-green-950/20' :
+                <Card key={notification.id} className={`w-80 ${notification.type === 'success' ? 'border-green-500 bg-green-50 dark:bg-green-950/20' :
                   notification.type === 'error' ? 'border-red-500 bg-red-50 dark:bg-red-950/20' :
-                  'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20'
-                } animate-in slide-in-from-right duration-300`}>
+                    'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20'
+                  } animate-in slide-in-from-right duration-300`}>
                   <CardContent className="p-3">
                     <p className="text-sm font-medium">{notification.message}</p>
                   </CardContent>
@@ -895,57 +894,6 @@ export function TradingDashboard() {
             </div>
           )}
         </div>
-
-        {/* Trading Panel & Order Book */}
-        <div className="space-y-4">
-          <TradingPanel selectedPair={selectedPair} currentPrice={currentPrice} />
-          <OrderBook selectedPair={selectedPair} />
-        </div>
-      </div>
-
-
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-card/50 backdrop-blur-sm border-blue-500/20">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-blue-500/10 backdrop-blur-sm rounded-lg">
-              <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <p className="text-sm text-blue-700 dark:text-blue-300">Volumen 24h</p>
-              <p className="font-bold text-foreground">{marketData[selectedPair].volume}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card/50 backdrop-blur-sm border-green-500/20">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-green-500/10 backdrop-blur-sm rounded-lg">
-              <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
-            </div>
-            <div>
-              <p className="text-sm text-green-700 dark:text-green-300">Máximo 24h</p>
-              <p className="font-bold text-foreground">
-                ${(currentPrice * 1.045).toFixed(2)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card/50 backdrop-blur-sm border-purple-500/20">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-purple-500/10 backdrop-blur-sm rounded-lg">
-              <Activity className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div>
-              <p className="text-sm text-purple-700 dark:text-purple-300">Volatilidad</p>
-              <p className="font-bold text-foreground">
-                {marketData[selectedPair].volatility}%
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

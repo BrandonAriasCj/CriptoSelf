@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Plot from "react-plotly.js";
+const Plot = React.lazy(() => import('./PlotlyFactory'));
 
 interface TradingData {
   timestamp: string;
@@ -53,45 +53,47 @@ const TradingChartDark: React.FC = () => {
   };
 
   return (
-    <Plot
-      data={[priceTrace, smaTrace, rsiTrace]}
-      layout={{
-        title: {
-          text: "📈 Gráfico Trading (Tema Oscuro)",
-          font: { color: "#e5e7eb" },
-        },
-        paper_bgcolor: "#111827", // fondo principal
-        plot_bgcolor: "#111827", // fondo del gráfico
-        font: { color: "#d1d5db" }, // color del texto
-        xaxis: {
-          title: { text: "Fecha" },
-          gridcolor: "#374151",
-          zerolinecolor: "#4b5563",
-        },
-        yaxis: {
-          title: { text: "Precio" },
-          gridcolor: "#374151",
-          zerolinecolor: "#4b5563",
-        },
-        yaxis2: {
-          title: "RSI",
-          overlaying: "y",
-          side: "right",
-          range: [0, 100],
-          showgrid: false,
-        },
-        legend: {
-          orientation: "h",
-          y: -0.2,
-          font: { color: "#d1d5db" },
-        },
-        margin: { l: 50, r: 50, t: 60, b: 50 },
-        autosize: true,
-      }}
-      useResizeHandler
-      style={{ width: "100%", height: "500px" }}
-      config={{ displayModeBar: true }}
-    />
+    <React.Suspense fallback={<div className="h-[500px] w-full flex items-center justify-center text-gray-400 bg-gray-900/50 rounded-lg animate-pulse">Cargando gráfico...</div>}>
+      <Plot
+        data={[priceTrace, smaTrace, rsiTrace]}
+        layout={{
+          title: {
+            text: "📈 Gráfico Trading (Tema Oscuro)",
+            font: { color: "#e5e7eb" },
+          },
+          paper_bgcolor: "#111827", // fondo principal
+          plot_bgcolor: "#111827", // fondo del gráfico
+          font: { color: "#d1d5db" }, // color del texto
+          xaxis: {
+            title: { text: "Fecha" },
+            gridcolor: "#374151",
+            zerolinecolor: "#4b5563",
+          },
+          yaxis: {
+            title: { text: "Precio" },
+            gridcolor: "#374151",
+            zerolinecolor: "#4b5563",
+          },
+          yaxis2: {
+            title: "RSI",
+            overlaying: "y",
+            side: "right",
+            range: [0, 100],
+            showgrid: false,
+          },
+          legend: {
+            orientation: "h",
+            y: -0.2,
+            font: { color: "#d1d5db" },
+          },
+          margin: { l: 50, r: 50, t: 60, b: 50 },
+          autosize: true,
+        }}
+        useResizeHandler
+        style={{ width: "100%", height: "500px" }}
+        config={{ displayModeBar: true }}
+      />
+    </React.Suspense>
   );
 };
 
