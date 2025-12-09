@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
+from oauth2_provider.contrib.rest_framework import TokenHasScope
 from .models import Operacion
 from .serializers import OperacionSerializer
 
@@ -21,8 +22,8 @@ class OperacionViewSet(viewsets.ModelViewSet):
     Solo muestra las operaciones del usuario autenticado.
     """
     serializer_class = OperacionSerializer
-    # TEMPORALMENTE DESACTIVADO PARA TESTING - REVERTIR ANTES DE PRODUCCIÓN
-    permission_classes = [permissions.AllowAny]  # Antes: [permissions.IsAuthenticated, IsOwner]
+    permission_classes = [TokenHasScope, IsOwner]
+    required_scopes = ['read']
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_fields = ['criptoactivo', 'tipo_operacion', 'estado']
     ordering_fields = ['fecha_operacion', 'created_at', 'monto_total']
@@ -31,17 +32,14 @@ class OperacionViewSet(viewsets.ModelViewSet):
 
 
     def get_queryset(self):
-        # TEMPORALMENTE MODIFICADO: Mostrar todas las operaciones cuando no hay autenticación
-        if self.request.user.is_authenticated:
-            return Operacion.objects.filter(usuario=self.request.user)
-        return Operacion.objects.all()
+        """
+        Retorna solo las operaciones del usuario autenticado
+        """
+        return Operacion.objects.filter(usuario=self.request.user)
 
     def perform_create(self, serializer):
-        # TEMPORALMENTE MODIFICADO: Solo asignar usuario si está autenticado
-        if self.request.user.is_authenticated:
-            serializer.save(usuario=self.request.user)
-        else:
-            # Sin autenticación, debe enviar el usuario en el body
-            usuarioprimero = User.objects.first()
-            serializer.save(usuario=usuarioprimero)
+        """
+        Asigna automáticamente el usuario autenticado a la nueva operación
+        """
+        serializer.save(usuario=self.request.user)
 

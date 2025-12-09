@@ -23,6 +23,9 @@ api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+    console.log(`🔐 Request to ${config.url} with token: ${token.substring(0, 20)}...`);
+  } else {
+    console.warn(`⚠️ Request to ${config.url} WITHOUT token`);
   }
   return config;
 });
@@ -34,13 +37,30 @@ api.interceptors.response.use(
     console.log('API Error:', error.response?.status, error.response?.data);
 
     if (error.response?.status === 401) {
+      // 🔍 DEBUG: Log detallado del error 401
+      console.group('🔴 ERROR 401 - No Autorizado');
+      console.log('🌐 URL que falló:', error.config?.url);
+      console.log('📋 Método:', error.config?.method?.toUpperCase());
+      console.log('📦 Headers enviados:', {
+        ...error.config?.headers,
+        Authorization: error.config?.headers?.Authorization
+          ? `Bearer ${error.config?.headers?.Authorization.substring(7, 20)}...`
+          : 'No token'
+      });
+      console.log('⚠️ Respuesta del servidor:', error.response?.data);
+      console.log('🔑 Token en localStorage:', localStorage.getItem('access_token')
+        ? `${localStorage.getItem('access_token')?.substring(0, 20)}...`
+        : 'No hay token');
+      console.groupEnd();
+
       // Solo hacer logout automático si no estamos en páginas de auth o logout
       const currentPath = window.location.pathname;
       const isAuthPage = currentPath === '/auth' || currentPath === '/login' || currentPath === '/register';
       const isLogoutRequest = error.config?.url?.includes('/logout/');
 
       if (!isAuthPage && !isLogoutRequest) {
-        console.log('Token expirado o inválido, redirigiendo al login');
+        console.warn('⏰ Cerrando sesión automáticamente en 2 segundos...');
+        console.warn('💡 Si esto es un error, revisa los logs arriba');
 
         // Limpiar storage de forma segura
         try {
@@ -54,7 +74,7 @@ api.interceptors.response.use(
         // Redirigir con un pequeño delay para evitar problemas de renderizado
         setTimeout(() => {
           window.location.href = '/auth';
-        }, 100);
+        }, 2000); // Aumentado a 2 segundos para dar tiempo de ver los logs
       }
     }
     return Promise.reject(error);

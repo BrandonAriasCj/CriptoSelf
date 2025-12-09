@@ -46,7 +46,8 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     Ver y actualizar perfil del usuario autenticado
     """
     serializer_class = UserUpdateSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [TokenHasScope]
+    required_scopes = ['read']
 
     def get_object(self):
         return self.request.user
@@ -62,6 +63,8 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
+        # Update required_scopes for write operations
+        self.required_scopes = ['write']
         self.perform_update(serializer)
         
         return Response(UserSerializer(instance).data)
@@ -156,6 +159,8 @@ def oauth_token(request):
         from datetime import datetime, timedelta
         import secrets
         
+        from django.utils import timezone
+        
         # Obtener configuración de OAuth2
         oauth2_config = getattr(settings, 'OAUTH2_PROVIDER', {})
         expires_seconds = oauth2_config.get('ACCESS_TOKEN_EXPIRE_SECONDS', 3600)
@@ -165,7 +170,7 @@ def oauth_token(request):
             user=user,
             application=application,
             token=secrets.token_urlsafe(30),
-            expires=datetime.now() + timedelta(seconds=expires_seconds),
+            expires=timezone.now() + timedelta(seconds=expires_seconds),
             scope='read write'
         )
         
@@ -275,11 +280,13 @@ class SocialAuthView(APIView):
             oauth2_config = getattr(settings, 'OAUTH2_PROVIDER', {})
             expires_seconds = oauth2_config.get('ACCESS_TOKEN_EXPIRE_SECONDS', 3600)
             
+            from django.utils import timezone
+            
             access_token_obj = AccessToken.objects.create(
                 user=user,
                 application=application,
                 token=secrets.token_urlsafe(30),
-                expires=datetime.now() + timedelta(seconds=expires_seconds),
+                expires=timezone.now() + timedelta(seconds=expires_seconds),
                 scope='read write'
             )
             
@@ -509,11 +516,13 @@ def google_exchange_code(request):
         oauth2_config = getattr(settings, 'OAUTH2_PROVIDER', {})
         expires_seconds = oauth2_config.get('ACCESS_TOKEN_EXPIRE_SECONDS', 36000)
         
+        from django.utils import timezone
+
         access_token_obj = AccessToken.objects.create(
             user=user,
             application=application,
             token=secrets.token_urlsafe(30),
-            expires=datetime.now() + timedelta(seconds=expires_seconds),
+            expires=timezone.now() + timedelta(seconds=expires_seconds),
             scope='read write'
         )
         
@@ -629,11 +638,13 @@ def google_register(request):
         oauth2_config = getattr(settings, 'OAUTH2_PROVIDER', {})
         expires_seconds = oauth2_config.get('ACCESS_TOKEN_EXPIRE_SECONDS', 36000)
         
+        from django.utils import timezone
+        
         access_token_obj = AccessToken.objects.create(
             user=user,
             application=application,
             token=secrets.token_urlsafe(30),
-            expires=datetime.now() + timedelta(seconds=expires_seconds),
+            expires=timezone.now() + timedelta(seconds=expires_seconds),
             scope='read write'
         )
         

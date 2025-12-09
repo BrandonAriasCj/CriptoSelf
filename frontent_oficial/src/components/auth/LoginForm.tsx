@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -14,6 +15,7 @@ interface LoginFormProps {
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
   const { login, loginWithSocial, isLoading } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -60,7 +62,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
               console.log(`🔄 Enviando código al backend para intercambio seguro...`);
               const authData = await googleAuth.handleCallback(code);
 
-              // Guardar token y usuario
+              // Guardar token y usuario en localStorage
               localStorage.setItem('access_token', authData.access_token);
               if (authData.user) {
                 localStorage.setItem('user', JSON.stringify(authData.user));
@@ -68,6 +70,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
 
               console.log(`✅ Autenticación con Google completada exitosamente`);
               toast.success('Sesión iniciada con Google');
+
+              // Recargar la página para que el AuthContext recoja los tokens guardados
+              // El useEffect en AuthContext (línea 30-44) detectará los tokens y cargará el usuario
               window.location.href = '/trading';
             } else {
               // GitHub: flujo anterior (puedes actualizarlo después)
