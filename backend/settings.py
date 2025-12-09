@@ -29,6 +29,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
     'django_extensions',
+    'django_filters',
+    
     
     # Third party apps
     'rest_framework',
@@ -45,6 +47,7 @@ INSTALLED_APPS = [
     'authentication.apps.AuthenticationConfig',
     'api',
     'backtesting',
+    'operaciones',
     'lessons.apps.LessonsConfig',
 ]
 

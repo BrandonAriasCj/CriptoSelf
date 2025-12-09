@@ -8,6 +8,6 @@ router.register(r'tasks', TaskViewSet)
 urlpatterns = [
     path('health/', health_check, name='health_check'),
     path('', include(router.urls)),
-    path('profile/', ProfileView.as_view(), name='profile'),
+    path('operaciones/', include('operaciones.urls')),
 
 ]
