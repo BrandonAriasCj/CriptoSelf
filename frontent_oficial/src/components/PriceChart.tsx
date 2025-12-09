@@ -55,6 +55,37 @@ const PriceChart: React.FC<PriceChartProps> = ({
     return symbolMap[pair] || 'btcusdt';
   };
 
+  // Obtener datos históricos de Binance
+  const fetchHistoricalData = async (pair: string, minutes: number = 5): Promise<PriceData[]> => {
+    try {
+      const symbol = getSymbolForPair(pair);
+      // Obtener klines de 1 minuto de los últimos N minutos
+      const limit = minutes;
+      const endTime = Date.now();
+      const startTime = endTime - (minutes * 60 * 1000);
+      
+      const url = `https://api.binance.com/api/v3/klines?symbol=${symbol.toUpperCase()}&interval=1m&limit=${limit}&startTime=${startTime}&endTime=${endTime}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const klines = await response.json();
+      
+      // Convertir klines a PriceData
+      const historicalData: PriceData[] = klines.map((kline: any[]) => ({
+        time: new Date(kline[0]).toISOString(), // timestamp de apertura
+        price: parseFloat(kline[4]), // precio de cierre
+      }));
+      
+      return historicalData;
+    } catch (error) {
+      console.error(`Error fetching historical data for ${pair}:`, error);
+      return [];
+    }
+  };
+
   // Funciones de persistencia
   const getStorageKey = (pair: string) => `${STORAGE_KEY_PREFIX}${pair}`;
 
@@ -103,33 +134,42 @@ const PriceChart: React.FC<PriceChartProps> = ({
   };
 
   // Generar datos simulados solo si no hay datos en storage
-  const generateSimulatedData = (pair: string): PriceData[] => {
+  const generateSimulatedData = (pair: string, currentPrice?: number): PriceData[] => {
     const data: PriceData[] = [];
-    const basePrice = pair === 'BTC/USDT' ? 55000 :
+    // Usar el precio actual si está disponible, sino usar precios base
+    const basePrice = currentPrice && currentPrice > 0 ? currentPrice :
+      pair === 'BTC/USDT' ? 55000 :
       pair === 'ETH/USDT' ? 2600 :
-        pair === 'ADA/USDT' ? 0.45 : 98;
+      pair === 'ADA/USDT' ? 0.45 : 98;
 
     const now = Date.now();
 
-    // Variación máxima por paso para cada par
-    const maxStepVariation = pair === 'ADA/USDT' ? 0.001 : // ±0.1% por paso para ADA
-      pair === 'BTC/USDT' ? 0.0005 : // ±0.05% por paso para BTC
-        pair === 'ETH/USDT' ? 0.0008 : // ±0.08% por paso para ETH
-          0.001; // ±0.1% por paso para otros
+    // Variación máxima por paso para cada par (aumentada para más variación visual)
+    const maxStepVariation = pair === 'ADA/USDT' ? 0.002 : // ±0.2% por paso para ADA
+      pair === 'BTC/USDT' ? 0.001 : // ±0.1% por paso para BTC
+        pair === 'ETH/USDT' ? 0.0015 : // ±0.15% por paso para ETH
+          0.002; // ±0.2% por paso para otros
 
-    let currentPrice = basePrice;
+    let simulatedPrice = basePrice;
 
-    // Generar puntos con continuidad (random walk)
-    for (let i = 30; i >= 0; i--) {
-      const time = new Date(now - i * 10000).toISOString(); // 10 segundos por punto
+    // Generar puntos con continuidad (random walk) - más puntos para mejor visualización
+    for (let i = 60; i >= 0; i--) {
+      const time = new Date(now - i * 5000).toISOString(); // 5 segundos por punto
 
-      // Aplicar variación pequeña al precio anterior
-      const variation = (Math.random() - 0.5) * maxStepVariation;
-      currentPrice = currentPrice * (1 + variation);
+      // Aplicar variación al precio anterior con tendencia suave
+      const randomVariation = (Math.random() - 0.5) * maxStepVariation;
+      // Agregar una pequeña tendencia aleatoria para evitar líneas completamente planas
+      const trend = (Math.random() - 0.5) * 0.0001;
+      simulatedPrice = simulatedPrice * (1 + randomVariation + trend);
+
+      // Asegurar que el precio no sea negativo o cero
+      if (simulatedPrice <= 0) {
+        simulatedPrice = basePrice;
+      }
 
       data.push({
         time,
-        price: Number(currentPrice.toFixed(pair === 'ADA/USDT' ? 4 : 2)),
+        price: Number(simulatedPrice.toFixed(pair === 'ADA/USDT' ? 4 : 2)),
       });
     }
 
@@ -485,22 +525,86 @@ const PriceChart: React.FC<PriceChartProps> = ({
 
     setIsLoading(true);
 
-    // Intentar cargar datos del storage primero
+    // Cargar datos iniciales inmediatamente (sin esperar async)
+    // Esto evita que la gráfica se vea vacía mientras se cargan los datos históricos
     let initialData = loadDataFromStorage(selectedPair);
-
-    // Si no hay datos en storage o son insuficientes, generar algunos datos base
+    
+    // Si no hay datos en storage, generar datos simulados inmediatamente
     if (initialData.length === 0) {
-      initialData = generateSimulatedData(selectedPair);
+      initialData = generateSimulatedData(selectedPair, externalCurrentPrice);
+      setPriceData(initialData);
+      const initialPrice = externalCurrentPrice && externalCurrentPrice > 0 
+        ? externalCurrentPrice 
+        : (initialData[initialData.length - 1]?.price || 0);
+      setCurrentPrice(initialPrice);
+    } else {
+      // Limpiar datos antiguos
+      initialData = cleanOldData(initialData);
+      setPriceData(initialData);
+      const initialPrice = externalCurrentPrice && externalCurrentPrice > 0 
+        ? externalCurrentPrice 
+        : (initialData[initialData.length - 1]?.price || 0);
+      setCurrentPrice(initialPrice);
     }
 
-    // Limpiar datos antiguos
-    initialData = cleanOldData(initialData);
+    // Función para actualizar con datos históricos reales (en background)
+    const loadHistoricalData = async () => {
+      // Verificar si necesitamos datos históricos
+      const needsHistorical = initialData.length === 0 || 
+        (initialData.length > 0 && Date.now() - new Date(initialData[initialData.length - 1].time).getTime() > 60000);
+      
+      if (needsHistorical) {
+        console.log(`📊 Obteniendo datos históricos para ${selectedPair}...`);
+        
+        // Intentar obtener datos históricos de Binance (últimos 5 minutos)
+        const historicalData = await fetchHistoricalData(selectedPair, 5);
+        
+        if (historicalData.length > 0) {
+          console.log(`✅ Obtenidos ${historicalData.length} puntos históricos de Binance`);
+          // Limpiar datos antiguos
+          const cleanedData = cleanOldData(historicalData);
+          
+          // Actualizar con datos históricos reales (solo si tenemos datos válidos)
+          // Usar una función de actualización para evitar conflictos con otras actualizaciones
+          if (cleanedData.length > 0) {
+            setPriceData((prev) => {
+              // Si ya hay datos mostrándose y son recientes, mantenerlos y solo actualizar si los históricos son mejores
+              if (prev.length > 0) {
+                const lastPrevTime = new Date(prev[prev.length - 1].time).getTime();
+                const lastHistoricalTime = new Date(cleanedData[cleanedData.length - 1].time).getTime();
+                
+                // Si los datos históricos son más recientes, usarlos
+                if (lastHistoricalTime > lastPrevTime) {
+                  return cleanedData;
+                }
+                // Si los datos actuales son más recientes, mantenerlos
+                return prev;
+              }
+              // Si no hay datos previos, usar los históricos
+              return cleanedData;
+            });
+            
+            // Guardar en storage para uso futuro
+            saveDataToStorage(selectedPair, cleanedData);
+            
+            const historicalPrice = externalCurrentPrice && externalCurrentPrice > 0 
+              ? externalCurrentPrice 
+              : (cleanedData[cleanedData.length - 1]?.price || 0);
+            setCurrentPrice(historicalPrice);
+          }
+        }
+      }
+      
+      setIsLoading(false);
+    };
 
-    setPriceData(initialData);
-    setCurrentPrice(initialData[initialData.length - 1]?.price || 0);
+    // Cargar datos históricos en background (sin bloquear la UI)
+    loadHistoricalData();
 
+    // Configurar WebSocket inmediatamente (no esperar a datos históricos)
     const symbol = getSymbolForPair(selectedPair);
-    const wsUrl = `wss://stream.binance.com:9443/ws/${symbol}@kline_1m`;
+    // Usar @ticker para actualizaciones más frecuentes (cada segundo aproximadamente)
+    const wsUrl = `wss://stream.binance.com:9443/ws/${symbol}@ticker`;
 
     try {
       const ws = new WebSocket(wsUrl);
@@ -513,33 +617,55 @@ const PriceChart: React.FC<PriceChartProps> = ({
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          if (message.k) {
-            const k = message.k;
-            const newPrice = parseFloat(k.c);
+          // @ticker devuelve 'c' como precio actual
+          if (message.c) {
+            const newPrice = parseFloat(message.c);
             if (!externalCurrentPrice) {
               setCurrentPrice(newPrice);
             }
 
-            // Agregar nuevo punto de precio
-            const newTime = new Date().toISOString();
-            const newPricePoint: PriceData = {
-              time: newTime,
-              price: newPrice,
-            };
-
+            // Agregar nuevo punto de precio solo si ha pasado al menos 1 segundo desde el último punto
+            // Esto evita saturar la gráfica con demasiados puntos
             setPriceData((prev: PriceData[]) => {
-              let updated = [...prev];
+              // Si no hay datos previos, no hacer nada (dejar que se carguen primero)
+              if (prev.length === 0) {
+                return prev;
+              }
 
-              // Agregar nuevo punto
-              updated.push(newPricePoint);
+              const now = Date.now();
+              const lastPoint = prev[prev.length - 1];
+              
+              // Solo agregar si ha pasado al menos 1 segundo
+              if (lastPoint && now - new Date(lastPoint.time).getTime() >= 1000) {
+                const newTime = new Date().toISOString();
+                const newPricePoint: PriceData = {
+                  time: newTime,
+                  price: newPrice,
+                };
 
-              // Limpiar datos antiguos (más de 5 minutos)
-              updated = cleanOldData(updated);
+                let updated = [...prev, newPricePoint];
 
-              // Guardar en localStorage
-              saveDataToStorage(selectedPair, updated);
+                // Limpiar datos antiguos (más de 5 minutos)
+                updated = cleanOldData(updated);
 
-              return updated;
+                // Guardar en localStorage
+                saveDataToStorage(selectedPair, updated);
+
+                return updated;
+              }
+              
+              // Si no ha pasado suficiente tiempo, actualizar solo el precio del último punto (sin cambiar el tiempo)
+              if (prev.length > 0) {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                  ...updated[updated.length - 1],
+                  price: newPrice,
+                };
+                // No guardar en storage en cada actualización para evitar sobrecarga
+                return updated;
+              }
+              
+              return prev;
             });
           }
         } catch (error) {
@@ -563,10 +689,16 @@ const PriceChart: React.FC<PriceChartProps> = ({
     // Simulador de datos en tiempo real como fallback
     const simulateRealTimeData = () => {
       setPriceData((prev: PriceData[]) => {
-        if (prev.length === 0) return prev;
+        if (prev.length === 0) {
+          // Si no hay datos, generar algunos iniciales
+          const newData = generateSimulatedData(selectedPair, externalCurrentPrice);
+          return newData;
+        }
 
-        // Usar el último precio como base para continuidad
-        const lastPrice = prev[prev.length - 1].price;
+        // Usar el precio externo si está disponible, sino usar el último precio
+        const basePrice = externalCurrentPrice && externalCurrentPrice > 0 
+          ? externalCurrentPrice 
+          : prev[prev.length - 1].price;
 
         // Variación más pequeña y realista
         const maxVariation = selectedPair === 'ADA/USDT' ? 0.002 : // ±0.2% para ADA
@@ -575,7 +707,7 @@ const PriceChart: React.FC<PriceChartProps> = ({
               0.002; // ±0.2% para otros
 
         const variation = (Math.random() - 0.5) * maxVariation;
-        const newPrice = lastPrice * (1 + variation);
+        const newPrice = basePrice * (1 + variation);
 
         if (!externalCurrentPrice) {
           setCurrentPrice(newPrice);
@@ -594,12 +726,13 @@ const PriceChart: React.FC<PriceChartProps> = ({
       });
     };
 
-    // Fallback: simular datos cada 10 segundos si no hay WebSocket
+    // Fallback: simular datos cada 2 segundos si no hay WebSocket o mientras espera conexión
+    // Esto mantiene la gráfica animada mientras se conecta
     const fallbackInterval = setInterval(() => {
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
         simulateRealTimeData();
       }
-    }, 10000);
+    }, 2000); // Reducido a 2 segundos para actualizaciones más frecuentes
 
     return () => {
       if (wsRef.current) {
@@ -607,7 +740,52 @@ const PriceChart: React.FC<PriceChartProps> = ({
       }
       clearInterval(fallbackInterval);
     };
-  }, [selectedPair]);
+  }, [selectedPair, externalCurrentPrice]);
+
+  // Actualizar gráfica cuando cambia el precio externo (del TradingDashboard)
+  // Solo actualizar si ya hay datos para evitar parpadeos
+  useEffect(() => {
+    if (externalCurrentPrice && externalCurrentPrice > 0) {
+      setPriceData((prev: PriceData[]) => {
+        // Si no hay datos, no hacer nada (dejar que el efecto principal los cargue)
+        if (prev.length === 0) {
+          return prev;
+        }
+
+        const now = Date.now();
+        const lastPoint = prev[prev.length - 1];
+        const timeSinceLastPoint = lastPoint 
+          ? now - new Date(lastPoint.time).getTime() 
+          : Infinity;
+
+        // Solo agregar nuevo punto si ha pasado al menos 1 segundo desde el último
+        if (timeSinceLastPoint >= 1000) {
+          const newPricePoint: PriceData = {
+            time: new Date().toISOString(),
+            price: externalCurrentPrice,
+          };
+
+          let updated = [...prev, newPricePoint];
+          updated = cleanOldData(updated);
+          saveDataToStorage(selectedPair, updated);
+          return updated;
+        } else {
+          // Actualizar el último punto con el precio actual (sin cambiar la estructura)
+          const updated = [...prev];
+          if (updated.length > 0) {
+            updated[updated.length - 1] = {
+              ...updated[updated.length - 1],
+              price: externalCurrentPrice,
+            };
+            saveDataToStorage(selectedPair, updated);
+          }
+          return updated;
+        }
+      });
+
+      setCurrentPrice(externalCurrentPrice);
+    }
+  }, [externalCurrentPrice, selectedPair]);
 
   // Limpiar datos antiguos periódicamente
   useEffect(() => {
