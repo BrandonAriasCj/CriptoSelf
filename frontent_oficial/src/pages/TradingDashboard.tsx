@@ -25,8 +25,11 @@ import {
   Flame,
   Trophy,
   Brain,
-  Shield
+  Shield,
+  Loader2
 } from 'lucide-react';
+import operationsService from '../services/operations';
+import { mapOperationToPosition, mapPositionToOperation, CRYPTO_MAP, type MappedPosition } from '../types/operations';
 
 const marketData = {
   'BTC/USDT': { price: 97777.53, change: 2.45, volume: '1.2B', marketCap: '1.9T', volatility: 3.2 },
@@ -80,7 +83,7 @@ export function TradingDashboard() {
   const [selectedPair, setSelectedPair] = useState('BTC/USDT');
   const [currentPrice, setCurrentPrice] = useState(marketData[selectedPair].price);
   const [priceHistory, setPriceHistory] = useState<number[]>([]);
-  const [positions, setPositions] = useState<Position[]>([]);
+  const [positions, setPositions] = useState<MappedPosition[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [account, setAccount] = useState<TradingAccount>({
     balance: 10000,
@@ -106,6 +109,10 @@ export function TradingDashboard() {
   const [notifications, setNotifications] = useState<Array<{ id: string, type: 'success' | 'error' | 'warning', message: string }>>([]);
   const wsRef = useRef<WebSocket | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
+
+  // Loading states for API operations
+  const [isLoadingPositions, setIsLoadingPositions] = useState(false);
+  const [isSavingOperation, setIsSavingOperation] = useState(false);
 
   // WebSocket connection for real-time data
   useEffect(() => {
@@ -174,6 +181,59 @@ export function TradingDashboard() {
     };
   }, [selectedPair]);
 
+
+  // Cargar posiciones abiertas al cambiar de par
+  useEffect(() => {
+    loadOpenPositions();
+  }, [selectedPair]);
+
+  // Cargar también el historial al montar
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  const loadOpenPositions = async () => {
+    setIsLoadingPositions(true);
+    try {
+      const cryptoId = CRYPTO_MAP[selectedPair];
+      const operations = await operationsService.getOpenPositions(cryptoId);
+      console.log('📥 Operaciones abiertas recibidas:', operations);
+
+      if (Array.isArray(operations)) {
+        const mappedPositions = operations.map(mapOperationToPosition);
+        setPositions(prev => {
+          // Mantener las posiciones cerradas y agregar/actualizar las abiertas
+          const closedPositions = prev.filter(p => p.status === 'closed');
+          return [...closedPositions, ...mappedPositions];
+        });
+        console.log(`✅ Cargadas ${mappedPositions.length} posiciones abiertas para ${selectedPair}`);
+      }
+    } catch (error: any) {
+      console.error('Error cargando posiciones abiertas:', error);
+      addNotification('error', `❌ Error cargando posiciones: ${error.message || 'Error desconocido'}`);
+    } finally {
+      setIsLoadingPositions(false);
+    }
+  };
+
+  const loadHistory = async () => {
+    try {
+      const operations = await operationsService.getHistory();
+      if (Array.isArray(operations) && operations.length > 0) {
+        const closedPositions = operations.map(mapOperationToPosition);
+        setPositions(prev => {
+          const newPositions = closedPositions.filter(
+            cp => !prev.some(p => p.operationId === cp.operationId)
+          );
+          return [...prev, ...newPositions];
+        });
+      }
+    } catch (error: any) {
+      console.error('Error cargando historial:', error);
+    }
+  };
+
+
   // Update positions P&L in real-time
   const updatePositionsPnL = (price: number) => {
     setPositions(prev => prev.map(position => {
@@ -205,7 +265,7 @@ export function TradingDashboard() {
   };
 
   // Execute manual trade
-  const executeOrder = () => {
+  const executeOrder = async () => {
     // Validation
     if (orderSize <= 0) {
       addNotification('error', '❌ Tamaño de orden inválido');
@@ -218,45 +278,67 @@ export function TradingDashboard() {
       return;
     }
 
-    // Create position
-    const position: Position = {
-      id: `pos_${Date.now()}`,
-      type: orderSide === 'buy' ? 'long' : 'short',
-      pair: selectedPair,
-      size: orderSize,
-      entryPrice: orderType === 'market' ? currentPrice : orderPrice,
-      leverage,
-      margin: requiredMargin,
-      stopLoss,
-      takeProfit,
-      timestamp: new Date(),
-      status: 'open',
-      pnl: 0,
-      unrealizedPnL: 0
-    };
+    setIsSavingOperation(true);
 
-    setPositions(prev => [...prev, position]);
+    try {
+      // Create position locally
+      const position: MappedPosition = {
+        id: `pos_${Date.now()}`,
+        type: orderSide === 'buy' ? 'long' : 'short',
+        pair: selectedPair,
+        size: orderSize,
+        entryPrice: orderType === 'market' ? currentPrice : orderPrice,
+        leverage,
+        margin: requiredMargin,
+        stopLoss,
+        takeProfit,
+        timestamp: new Date(),
+        status: 'open',
+        pnl: 0,
+        unrealizedPnL: 0
+      };
 
-    // Update account
-    setAccount(prev => ({
-      ...prev,
-      margin: prev.margin + requiredMargin,
-      freeMargin: prev.freeMargin - requiredMargin
-    }));
+      // Save to backend
+      const operation = mapPositionToOperation(position, selectedPair);
+      console.log('📤 Enviando operación al backend:', operation);
+      const savedOperation = await operationsService.create(operation);
+      console.log('✅ Operación guardada:', savedOperation);
 
-    const leverageText = leverage > 1 ? ` (${leverage}x)` : '';
-    addNotification('success',
-      `✅ ${position.type.toUpperCase()} ${orderSize} ${selectedPair}${leverageText} @ $${position.entryPrice.toFixed(2)}`
-    );
+      // Update position with backend ID
+      const mappedPosition: MappedPosition = {
+        ...position,
+        id: savedOperation.id?.toString() || position.id,
+        operationId: savedOperation.id,
+      };
 
-    // Reset form
-    setOrderSize(0.01);
-    setStopLoss(undefined);
-    setTakeProfit(undefined);
+      setPositions(prev => [...prev, mappedPosition]);
+
+      // Update account
+      setAccount(prev => ({
+        ...prev,
+        margin: prev.margin + requiredMargin,
+        freeMargin: prev.freeMargin - requiredMargin
+      }));
+
+      const leverageText = leverage > 1 ? ` (${leverage}x)` : '';
+      addNotification('success',
+        `✅ ${position.type.toUpperCase()} ${orderSize} ${selectedPair}${leverageText} @ $${position.entryPrice.toFixed(2)}`
+      );
+
+      // Reset form
+      setOrderSize(0.01);
+      setStopLoss(undefined);
+      setTakeProfit(undefined);
+    } catch (error: any) {
+      console.error('Error guardando operación:', error);
+      addNotification('error', `❌ Error al guardar operación: ${error.response?.data?.detail || error.message || 'Error desconocido'}`);
+    } finally {
+      setIsSavingOperation(false);
+    }
   };
 
   // Close position
-  const closePosition = (positionId: string) => {
+  const closePosition = async (positionId: string) => {
     const position = positions.find(p => p.id === positionId);
     if (!position || position.status === 'closed') return;
 
@@ -266,27 +348,40 @@ export function TradingDashboard() {
 
     const realizedPnL = (priceDiff * position.size * position.leverage);
 
-    setPositions(prev => prev.map(p =>
-      p.id === positionId
-        ? { ...p, status: 'closed' as const, pnl: realizedPnL, unrealizedPnL: 0 }
-        : p
-    ));
+    try {
+      // Update in backend if we have an operationId
+      if (position.operationId) {
+        await operationsService.update(position.operationId, {
+          estado: 'completada',
+          notas: `Cerrado con P&L: $${realizedPnL.toFixed(2)} - Precio de cierre: $${currentPrice.toFixed(2)}`
+        });
+      }
 
-    // Update account
-    setAccount(prev => ({
-      ...prev,
-      balance: prev.balance + realizedPnL,
-      margin: prev.margin - position.margin,
-      freeMargin: prev.freeMargin + position.margin,
-      realizedPnL: prev.realizedPnL + realizedPnL,
-      totalPnL: prev.totalPnL + realizedPnL
-    }));
+      setPositions(prev => prev.map(p =>
+        p.id === positionId
+          ? { ...p, status: 'closed' as const, pnl: realizedPnL, unrealizedPnL: 0 }
+          : p
+      ));
 
-    const emoji = realizedPnL > 0 ? '💰' : '📉';
-    addNotification(
-      realizedPnL > 0 ? 'success' : 'error',
-      `${emoji} Posición cerrada - P&L: $${realizedPnL.toFixed(2)}`
-    );
+      // Update account
+      setAccount(prev => ({
+        ...prev,
+        balance: prev.balance + realizedPnL,
+        margin: prev.margin - position.margin,
+        freeMargin: prev.freeMargin + position.margin,
+        realizedPnL: prev.realizedPnL + realizedPnL,
+        totalPnL: prev.totalPnL + realizedPnL
+      }));
+
+      const emoji = realizedPnL > 0 ? '💰' : '📉';
+      addNotification(
+        realizedPnL > 0 ? 'success' : 'error',
+        `${emoji} Posición cerrada - P&L: $${realizedPnL.toFixed(2)}`
+      );
+    } catch (error: any) {
+      console.error('Error cerrando posición:', error);
+      addNotification('error', `❌ Error al cerrar posición: ${error.message || 'Error desconocido'}`);
+    }
   };
 
   const addNotification = (type: 'success' | 'error' | 'warning', message: string) => {
@@ -585,9 +680,19 @@ export function TradingDashboard() {
 
                   <Button
                     onClick={executeOrder}
+                    disabled={isSavingOperation || isLoadingPositions}
                     className={`w-full ${orderSide === 'buy' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
                   >
-                    {orderSide === 'buy' ? 'COMPRAR' : 'VENDER'} {selectedPair}
+                    {isSavingOperation ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        {orderSide === 'buy' ? 'COMPRAR' : 'VENDER'} {selectedPair}
+                      </>
+                    )}
                   </Button>
                 </div>
 

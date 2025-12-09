@@ -234,14 +234,18 @@ GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET', '')
 GITHUB_REDIRECT_URI = os.getenv('GITHUB_REDIRECT_URI', 'http://localhost:3000/auth/github/callback')
 
 # CORS Settings
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-]
+# TEMPORALMENTE: Permitir todos los orígenes para desarrollo
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",
+#     "http://127.0.0.1:3000",
+#     "http://localhost:8080",
+#     "http://127.0.0.1:8080",
+# ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Permitir todos los métodos para desarrollo
+CORS_ALLOW_ALL_METHODS = True
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -263,3 +267,7 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
+# Permitir cualquier origen para desarrollo (SOLO PARA TESTING)
+# IMPORTANTE: Deshabilitar en producción
+CORS_ALLOW_ALL_ORIGINS = True
