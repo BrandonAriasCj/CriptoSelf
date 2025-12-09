@@ -31,11 +31,30 @@ import {
 import operationsService from '../services/operations';
 import { mapOperationToPosition, mapPositionToOperation, CRYPTO_MAP, type MappedPosition } from '../types/operations';
 
-const marketData = {
-  'BTC/USDT': { price: 97777.53, change: 2.45, volume: '1.2B', marketCap: '1.9T', volatility: 3.2 },
-  'ETH/USDT': { price: 3645.32, change: -1.23, volume: '850M', marketCap: '438B', volatility: 4.1 },
-  'ADA/USDT': { price: 0.8521, change: 5.67, volume: '320M', marketCap: '30B', volatility: 6.8 },
-  'SOL/USDT': { price: 198.45, change: 3.21, volume: '180M', marketCap: '92B', volatility: 7.2 },
+// Datos iniciales de mercado (se actualizarán en tiempo real)
+const initialMarketData = {
+  'BTC/USDT': { price: 0, change: 0, volume: '1.2B', marketCap: '1.9T', volatility: 3.2, price24h: 0 },
+  'ETH/USDT': { price: 0, change: 0, volume: '850M', marketCap: '438B', volatility: 4.1, price24h: 0 },
+  'ADA/USDT': { price: 0, change: 0, volume: '320M', marketCap: '30B', volatility: 6.8, price24h: 0 },
+  'SOL/USDT': { price: 0, change: 0, volume: '180M', marketCap: '92B', volatility: 7.2, price24h: 0 },
+};
+
+// Mapeo de pares a símbolos de Binance
+const PAIR_TO_SYMBOL: Record<string, string> = {
+  'BTC/USDT': 'btcusdt',
+  'ETH/USDT': 'ethusdt',
+  'ADA/USDT': 'adausdt',
+  'SOL/USDT': 'solusdt',
+};
+
+// Helper para formatear precios según el par
+const formatPrice = (price: number, pair: string): string => {
+  if (price <= 0) return 'Cargando...';
+  const decimals = pair === 'ADA/USDT' ? 4 : 2;
+  return price.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
 };
 
 interface Position {
@@ -81,7 +100,8 @@ interface TradingAccount {
 
 export function TradingDashboard() {
   const [selectedPair, setSelectedPair] = useState('BTC/USDT');
-  const [currentPrice, setCurrentPrice] = useState(marketData[selectedPair].price);
+  const [marketData, setMarketData] = useState(initialMarketData);
+  const [currentPrice, setCurrentPrice] = useState(0);
   const [priceHistory, setPriceHistory] = useState<number[]>([]);
   const [positions, setPositions] = useState<MappedPosition[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -101,85 +121,184 @@ export function TradingDashboard() {
   const [orderType, setOrderType] = useState<'market' | 'limit' | 'stop'>('market');
   const [orderSide, setOrderSide] = useState<'buy' | 'sell'>('buy');
   const [orderSize, setOrderSize] = useState<number>(0.01);
-  const [orderPrice, setOrderPrice] = useState<number>(currentPrice);
+  const [orderPrice, setOrderPrice] = useState<number>(0);
   const [leverage, setLeverage] = useState<number>(1);
   const [stopLoss, setStopLoss] = useState<number | undefined>();
   const [takeProfit, setTakeProfit] = useState<number | undefined>();
 
+  // Mantener refs actualizados
+  useEffect(() => {
+    selectedPairRef.current = selectedPair;
+  }, [selectedPair]);
+
+  useEffect(() => {
+    orderTypeRef.current = orderType;
+  }, [orderType]);
+
   const [notifications, setNotifications] = useState<Array<{ id: string, type: 'success' | 'error' | 'warning', message: string }>>([]);
-  const wsRef = useRef<WebSocket | null>(null);
+  const wsRefs = useRef<Record<string, WebSocket>>({});
+  const selectedPairRef = useRef(selectedPair);
+  const orderTypeRef = useRef(orderType);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
 
   // Loading states for API operations
   const [isLoadingPositions, setIsLoadingPositions] = useState(false);
   const [isSavingOperation, setIsSavingOperation] = useState(false);
 
-  // WebSocket connection for real-time data
+  // Conectar WebSockets para todos los pares en tiempo real
   useEffect(() => {
-    const connectWebSocket = () => {
-      setConnectionStatus('connecting');
-      // Simular WebSocket con datos reales
-      const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@ticker');
+    const pairs = Object.keys(PAIR_TO_SYMBOL);
+    let connectedCount = 0;
 
-      ws.onopen = () => {
-        setConnectionStatus('connected');
-        addNotification('success', '🟢 Conectado al feed en tiempo real');
-      };
+    const connectWebSocket = (pair: string) => {
+      const symbol = PAIR_TO_SYMBOL[pair];
+      const wsUrl = `wss://stream.binance.com:9443/ws/${symbol}@ticker`;
 
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.c) { // current price
-            const newPrice = parseFloat(data.c);
-            setCurrentPrice(newPrice);
-            setPriceHistory(prev => [...prev.slice(-99), newPrice]);
-            updatePositionsPnL(newPrice);
+      try {
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          connectedCount++;
+          if (connectedCount === 1) {
+            setConnectionStatus('connected');
+            addNotification('success', '🟢 Conectado al feed en tiempo real');
           }
-        } catch (error) {
-          console.error('Error parsing WebSocket data:', error);
-        }
-      };
+          console.log(`✅ WebSocket conectado para ${pair}`);
+        };
 
-      ws.onerror = () => {
-        setConnectionStatus('disconnected');
-        addNotification('error', '🔴 Error de conexión');
-      };
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.c && data.P !== undefined && data.o) {
+              // c = precio actual, P = cambio porcentual 24h, o = precio de apertura 24h
+              const newPrice = parseFloat(data.c);
+              const change24h = parseFloat(data.P);
+              const openPrice24h = parseFloat(data.o);
 
-      ws.onclose = () => {
-        setConnectionStatus('disconnected');
-        setTimeout(connectWebSocket, 5000);
-      };
+              // Validar que el precio sea razonable para este par
+              const isValidPrice = (price: number, pair: string): boolean => {
+                if (isNaN(price) || price <= 0) {
+                  console.warn(`Precio inválido (NaN o <= 0) para ${pair}: ${price}`);
+                  return false;
+                }
+                // Rangos aproximados de precios válidos
+                let isValid = false;
+                if (pair === 'BTC/USDT') {
+                  isValid = price > 1000 && price < 200000;
+                } else if (pair === 'ETH/USDT') {
+                  isValid = price > 100 && price < 10000;
+                } else if (pair === 'ADA/USDT') {
+                  isValid = price > 0.1 && price < 10;
+                } else if (pair === 'SOL/USDT') {
+                  isValid = price > 10 && price < 1000;
+                } else {
+                  isValid = true;
+                }
+                
+                if (!isValid) {
+                  console.warn(`Precio fuera de rango para ${pair}: ${price} (esperado: ${pair === 'ADA/USDT' ? '0.1-10' : pair === 'BTC/USDT' ? '1000-200000' : pair === 'ETH/USDT' ? '100-10000' : '10-1000'})`);
+                }
+                return isValid;
+              };
 
-      wsRef.current = ws;
-    };
+              if (!isValidPrice(newPrice, pair)) {
+                return; // Ignorar este mensaje
+              }
 
-    // Fallback: simulate price updates
-    const simulatePrice = () => {
-      const interval = setInterval(() => {
-        const basePrice = marketData[selectedPair].price;
-        const variation = (Math.random() - 0.5) * (basePrice * 0.002);
-        const newPrice = basePrice + variation;
-        setCurrentPrice(newPrice);
-        setPriceHistory(prev => [...prev.slice(-99), newPrice]);
-        updatePositionsPnL(newPrice);
-      }, 1000);
+              // Actualizar datos de mercado para este par
+              setMarketData(prev => ({
+                ...prev,
+                [pair]: {
+                  ...prev[pair],
+                  price: newPrice,
+                  change: change24h,
+                  price24h: openPrice24h,
+                }
+              }));
 
-      return interval;
-    };
+              // Si es el par seleccionado, actualizar también el precio actual
+              // Usar refs para obtener los valores actuales
+              if (pair === selectedPairRef.current) {
+                setCurrentPrice(newPrice);
+                setPriceHistory(prev => [...prev.slice(-99), newPrice]);
+                updatePositionsPnL(newPrice);
+                // Actualizar precio del formulario si es market order
+                if (orderTypeRef.current === 'market') {
+                  setOrderPrice(newPrice);
+                }
+              }
+            }
+          } catch (error) {
+            console.error(`Error parsing WebSocket data para ${pair}:`, error);
+          }
+        };
 
-    if (selectedPair === 'BTC/USDT') {
-      connectWebSocket();
-    } else {
-      const interval = simulatePrice();
-      return () => clearInterval(interval);
-    }
+        ws.onerror = (error) => {
+          console.error(`Error en WebSocket para ${pair}:`, error);
+          connectedCount--;
+          if (connectedCount === 0) {
+            setConnectionStatus('disconnected');
+            addNotification('error', `🔴 Error de conexión para ${pair}`);
+          }
+        };
 
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
+        ws.onclose = () => {
+          console.log(`WebSocket cerrado para ${pair}, reconectando...`);
+          connectedCount--;
+          if (connectedCount === 0) {
+            setConnectionStatus('disconnected');
+          }
+          // Reconectar después de 3 segundos
+          setTimeout(() => connectWebSocket(pair), 3000);
+        };
+
+        wsRefs.current[pair] = ws;
+      } catch (error) {
+        console.error(`Error creando WebSocket para ${pair}:`, error);
       }
     };
-  }, [selectedPair]);
+
+    // Conectar todos los pares
+    setConnectionStatus('connecting');
+    pairs.forEach(pair => {
+      connectWebSocket(pair);
+    });
+
+    // Cleanup: cerrar todas las conexiones
+    return () => {
+      Object.values(wsRefs.current).forEach(ws => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.close();
+        }
+      });
+      wsRefs.current = {};
+    };
+  }, []); // Solo ejecutar una vez al montar
+
+  // Actualizar precio actual cuando cambia el par seleccionado
+  useEffect(() => {
+    const pairData = marketData[selectedPair];
+    if (pairData && pairData.price > 0) {
+      // Validar que el precio sea razonable antes de actualizar
+      const isValidPrice = (price: number, pair: string): boolean => {
+        if (isNaN(price) || price <= 0) return false;
+        if (pair === 'BTC/USDT') return price > 1000 && price < 200000;
+        if (pair === 'ETH/USDT') return price > 100 && price < 10000;
+        if (pair === 'ADA/USDT') return price > 0.1 && price < 10;
+        if (pair === 'SOL/USDT') return price > 10 && price < 1000;
+        return true;
+      };
+
+      if (isValidPrice(pairData.price, selectedPair)) {
+        setCurrentPrice(pairData.price);
+        if (orderType === 'market') {
+          setOrderPrice(pairData.price);
+        }
+        setPriceHistory(prev => [...prev.slice(-99), pairData.price]);
+        updatePositionsPnL(pairData.price);
+      }
+    }
+  }, [selectedPair]); // Solo cuando cambia el par seleccionado
 
 
   // Cargar posiciones abiertas al cambiar de par
@@ -412,9 +531,8 @@ export function TradingDashboard() {
   // Calculate margin level
   const marginLevel = account.margin > 0 ? (account.equity / account.margin) * 100 : 0;
 
-  const priceChange = priceHistory.length >= 2
-    ? ((currentPrice - priceHistory[priceHistory.length - 2]) / priceHistory[priceHistory.length - 2]) * 100
-    : ((currentPrice - marketData[selectedPair].price) / marketData[selectedPair].price) * 100;
+  // Calcular cambio de precio (usar cambio 24h del marketData)
+  const priceChange = marketData[selectedPair]?.change || 0;
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
@@ -450,7 +568,7 @@ export function TradingDashboard() {
               <div className="space-y-2">
                 <div className="flex items-end gap-2">
                   <p className="text-lg font-bold">
-                    ${pair === selectedPair ? currentPrice.toFixed(2) : data.price.toLocaleString()}
+                    ${formatPrice(data.price, pair)}
                   </p>
                   {pair === selectedPair && (
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -483,16 +601,18 @@ export function TradingDashboard() {
                   }
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Volatilidad: {marketData[selectedPair].volatility}% •
-                  Cap. de Mercado: {marketData[selectedPair].marketCap}
+                  Volatilidad: {marketData[selectedPair]?.volatility || 0}% •
+                  Cap. de Mercado: {marketData[selectedPair]?.marketCap || 'N/A'}
                 </p>
               </div>
             </div>
             <div className="flex flex-col md:flex-row md:items-center gap-4">
               <div className="text-center md:text-right">
-                <p className="text-3xl font-bold">${currentPrice.toFixed(2)}</p>
+                <p className="text-3xl font-bold">
+                  ${formatPrice(currentPrice, selectedPair)}
+                </p>
                 <p className={`text-sm font-medium ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(4)}%
+                  {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
                   <span className="text-xs text-muted-foreground ml-1">24h</span>
                 </p>
               </div>
