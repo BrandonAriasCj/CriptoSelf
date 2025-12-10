@@ -39,6 +39,12 @@ const PriceChart: React.FC<PriceChartProps> = ({
   const [hoveredPosition, setHoveredPosition] = useState<Position | null>(null);
   const [mousePos, setMousePos] = useState<{x: number, y: number}>({x: 0, y: 0});
   const wsRef = useRef<WebSocket | null>(null);
+  
+  // Estados para indicadores técnicos
+  const [showSMA, setShowSMA] = useState(true);
+  const [showEMA, setShowEMA] = useState(false);
+  const [smaPeriod, setSmaPeriod] = useState(20);
+  const [emaPeriod, setEmaPeriod] = useState(20);
 
   // Constantes para la persistencia
   const HISTORY_DURATION = 5 * 60 * 1000; // 5 minutos en milisegundos
@@ -176,8 +182,37 @@ const PriceChart: React.FC<PriceChartProps> = ({
     return data;
   };
 
+  // Calcular Media Móvil Simple (SMA)
+  const calculateSMA = (data: PriceData[], period: number): number[] => {
+    const sma: number[] = [];
+    for (let i = 0; i < data.length; i++) {
+      if (i < period - 1) {
+        sma.push(NaN); // No hay suficientes datos
+      } else {
+        const sum = data.slice(i - period + 1, i + 1).reduce((acc, d) => acc + d.price, 0);
+        sma.push(sum / period);
+      }
+    }
+    return sma;
+  };
 
-
+  // Calcular Media Móvil Exponencial (EMA)
+  const calculateEMA = (data: PriceData[], period: number): number[] => {
+    const ema: number[] = [];
+    const multiplier = 2 / (period + 1);
+    
+    for (let i = 0; i < data.length; i++) {
+      if (i === 0) {
+        ema.push(data[i].price); // Primer valor es el precio
+      } else {
+        const prevEMA = ema[i - 1];
+        const currentPrice = data[i].price;
+        const newEMA = (currentPrice - prevEMA) * multiplier + prevEMA;
+        ema.push(newEMA);
+      }
+    }
+    return ema;
+  };
 
   // Dibujar el gráfico de líneas en canvas
   const drawChart = () => {
@@ -197,10 +232,19 @@ const PriceChart: React.FC<PriceChartProps> = ({
     const gridColor = '#374151';
     const textColor = '#9ca3af';
 
-    // Calcular rangos con zoom automático adaptativo
+    // Calcular indicadores técnicos
+    const smaValues = showSMA ? calculateSMA(priceData, smaPeriod) : [];
+    const emaValues = showEMA ? calculateEMA(priceData, emaPeriod) : [];
+    
+    // Calcular rangos con zoom automático adaptativo (incluyendo indicadores)
     const prices = priceData.map((d: PriceData) => d.price);
-    const rawMinPrice = Math.min(...prices);
-    const rawMaxPrice = Math.max(...prices);
+    const allValues = [
+      ...prices,
+      ...smaValues.filter(v => !isNaN(v)),
+      ...emaValues.filter(v => !isNaN(v))
+    ];
+    const rawMinPrice = Math.min(...allValues);
+    const rawMaxPrice = Math.max(...allValues);
     const rawRange = rawMaxPrice - rawMinPrice;
 
     // Calcular el precio promedio para determinar el contexto
@@ -306,7 +350,59 @@ const PriceChart: React.FC<PriceChartProps> = ({
       ctx.fill();
     }
 
-    // Dibujar línea principal
+    // Dibujar Media Móvil Simple (SMA) si está activada
+    if (showSMA && smaValues.length > 0) {
+      ctx.beginPath();
+      let hasStarted = false;
+      
+      priceData.forEach((point: PriceData, index: number) => {
+        const smaValue = smaValues[index];
+        if (!isNaN(smaValue)) {
+          const x = padding + (chartWidth / (priceData.length - 1)) * index;
+          const y = padding + ((maxPrice - smaValue) / priceRange) * chartHeight;
+
+          if (!hasStarted) {
+            ctx.moveTo(x, y);
+            hasStarted = true;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+      });
+
+      ctx.strokeStyle = '#f59e0b'; // Color naranja para SMA
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 5]); // Línea punteada
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Dibujar Media Móvil Exponencial (EMA) si está activada
+    if (showEMA && emaValues.length > 0) {
+      ctx.beginPath();
+      
+      priceData.forEach((point: PriceData, index: number) => {
+        const emaValue = emaValues[index];
+        if (!isNaN(emaValue)) {
+          const x = padding + (chartWidth / (priceData.length - 1)) * index;
+          const y = padding + ((maxPrice - emaValue) / priceRange) * chartHeight;
+
+          if (index === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+      });
+
+      ctx.strokeStyle = '#8b5cf6'; // Color púrpura para EMA
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]); // Línea punteada más corta
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Dibujar línea principal del precio
     ctx.beginPath();
     priceData.forEach((point: PriceData, index: number) => {
       const x = padding + (chartWidth / (priceData.length - 1)) * index;
@@ -802,10 +898,10 @@ const PriceChart: React.FC<PriceChartProps> = ({
     return () => clearInterval(cleanupInterval);
   }, [selectedPair]);
 
-  // Dibujar cuando cambien los datos
+  // Dibujar cuando cambien los datos o los indicadores
   useEffect(() => {
     drawChart();
-  }, [priceData, currentPrice, positions, externalCurrentPrice]);
+  }, [priceData, currentPrice, positions, externalCurrentPrice, showSMA, showEMA, smaPeriod, emaPeriod]);
 
   // Configurar canvas al montar
   useEffect(() => {
@@ -953,6 +1049,65 @@ const PriceChart: React.FC<PriceChartProps> = ({
             </div>
           </div>
         )}
+        </div>
+        
+        {/* Controles de indicadores */}
+        <div className="bg-background/90 backdrop-blur-sm rounded-lg p-3 border">
+          <div className="text-xs font-semibold text-muted-foreground mb-2">Indicadores</div>
+          
+          {/* SMA Control */}
+          <div className="flex items-center gap-2 mb-2">
+            <input
+              type="checkbox"
+              id="showSMA"
+              checked={showSMA}
+              onChange={(e) => setShowSMA(e.target.checked)}
+              className="w-4 h-4 rounded cursor-pointer"
+            />
+            <label htmlFor="showSMA" className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1">
+              <div className="w-3 h-0.5 bg-orange-500" style={{borderStyle: 'dashed', borderWidth: '1px 0'}}></div>
+              <span>SMA</span>
+            </label>
+            {showSMA && (
+              <select
+                value={smaPeriod}
+                onChange={(e) => setSmaPeriod(Number(e.target.value))}
+                className="ml-2 text-xs bg-background border rounded px-1 py-0.5 cursor-pointer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+            )}
+          </div>
+          
+          {/* EMA Control */}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="showEMA"
+              checked={showEMA}
+              onChange={(e) => setShowEMA(e.target.checked)}
+              className="w-4 h-4 rounded cursor-pointer"
+            />
+            <label htmlFor="showEMA" className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1">
+              <div className="w-3 h-0.5 bg-purple-500" style={{borderStyle: 'dashed', borderWidth: '1px 0'}}></div>
+              <span>EMA</span>
+            </label>
+            {showEMA && (
+              <select
+                value={emaPeriod}
+                onChange={(e) => setEmaPeriod(Number(e.target.value))}
+                className="ml-2 text-xs bg-background border rounded px-1 py-0.5 cursor-pointer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+            )}
+          </div>
         </div>
         
         {/* Leyenda de operaciones */}
