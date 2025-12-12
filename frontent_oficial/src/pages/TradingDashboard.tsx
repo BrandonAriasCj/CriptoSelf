@@ -702,10 +702,6 @@ export function TradingDashboard() {
                     {connectionStatus === 'connected' ? '🟢 En Vivo' :
                       connectionStatus === 'connecting' ? '🟡 Conectando...' : '🔴 Desconectado'}
                   </Badge>
-                  <Button onClick={resetAccount} variant="outline">
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Reset
-                  </Button>
                   <Button 
                     onClick={() => setIsTradingPanelCollapsed(!isTradingPanelCollapsed)} 
                     variant="ghost" 
