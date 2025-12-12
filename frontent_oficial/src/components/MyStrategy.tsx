@@ -629,11 +629,11 @@ export function MyStrategy() {
       </Card>
 
       {/* Info Card */}
-      <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
+      <Card className="bg-card border-blue-500/20">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <BarChart3 className="w-6 h-6 text-blue-600" />
+            <div className="p-3 bg-blue-500/10 rounded-lg">
+              <BarChart3 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-lg mb-2">¿Qué es el Backtesting?</h3>
