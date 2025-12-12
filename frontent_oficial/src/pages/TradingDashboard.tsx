@@ -616,7 +616,7 @@ export function TradingDashboard() {
                   <span className="text-xs text-muted-foreground ml-1">24h</span>
                 </p>
               </div>
-              <div className="flex gap-2">
+{/*               <div className="flex gap-2">
                 <Button variant="outline" size="sm">
                   <Zap className="w-4 h-4 mr-1" />
                   Alertas
@@ -625,7 +625,7 @@ export function TradingDashboard() {
                   <BarChart3 className="w-4 h-4 mr-1" />
                   Análisis
                 </Button>
-              </div>
+              </div> */}
             </div>
           </div>
         </CardHeader>
