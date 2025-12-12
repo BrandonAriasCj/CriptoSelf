@@ -152,7 +152,6 @@ export function TradingDashboard() {
 
   // Collapse states for panels
   const [isTradingPanelCollapsed, setIsTradingPanelCollapsed] = useState(false);
-  const [isAccountStatsCollapsed, setIsAccountStatsCollapsed] = useState(false);
   const [isOpenPositionsCollapsed, setIsOpenPositionsCollapsed] = useState(false);
   const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false);
 
@@ -888,130 +887,6 @@ export function TradingDashboard() {
                   </div>
                 </div>
               </div>
-            </CardContent>
-            )}
-          </Card>
-
-          {/* Account Stats */}
-          <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
-            <CardHeader className="py-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Wallet className="w-5 h-5 text-primary" />
-                  Estadísticas de Cuenta
-                </CardTitle>
-                <Button 
-                  onClick={() => setIsAccountStatsCollapsed(!isAccountStatsCollapsed)} 
-                  variant="ghost" 
-                  size="sm"
-                >
-                  {isAccountStatsCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-                </Button>
-              </div>
-            </CardHeader>
-            {!isAccountStatsCollapsed && (
-            <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="bg-card/50 backdrop-blur-sm border-green-500/20">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 bg-green-500/10 backdrop-blur-sm rounded-lg">
-                  <Wallet className="w-5 h-5 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-green-700 dark:text-green-300">Balance</p>
-                  <p className="font-bold text-foreground">
-                    ${account.balance.toFixed(2)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Equity: ${account.equity.toFixed(2)}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card/50 backdrop-blur-sm border-blue-500/20">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 bg-blue-500/10 backdrop-blur-sm rounded-lg">
-                  <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">Margen</p>
-                  <p className="font-bold text-foreground">
-                    ${account.margin.toFixed(2)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Libre: ${account.freeMargin.toFixed(2)}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className={`bg-card/50 backdrop-blur-sm ${account.totalPnL >= 0
-              ? 'border-purple-500/20'
-              : 'border-red-500/20'}`}>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className={`p-2 rounded-lg backdrop-blur-sm ${account.totalPnL >= 0
-                  ? 'bg-purple-500/10'
-                  : 'bg-red-500/10'}`}>
-                  <TrendingUpDown className={`w-5 h-5 ${account.totalPnL >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400'}`} />
-                </div>
-                <div>
-                  <p className={`text-sm ${account.totalPnL >= 0
-                    ? 'text-purple-700 dark:text-purple-300'
-                    : 'text-red-700 dark:text-red-300'}`}>
-                    P&L Total
-                  </p>
-                  <p className={`font-bold ${account.totalPnL >= 0
-                    ? 'text-purple-700 dark:text-purple-300'
-                    : 'text-red-700 dark:text-red-300'}`}>
-                    {account.totalPnL >= 0 ? '+' : ''}${account.totalPnL.toFixed(2)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    No realizado: ${account.unrealizedPnL.toFixed(2)}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className={`bg-card/50 backdrop-blur-sm ${marginLevel > 200
-              ? 'border-green-500/20'
-              : marginLevel > 100
-                ? 'border-yellow-500/20'
-                : 'border-red-500/20'}`}>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className={`p-2 rounded-lg backdrop-blur-sm ${marginLevel > 200
-                  ? 'bg-green-500/10'
-                  : marginLevel > 100
-                    ? 'bg-yellow-500/10'
-                    : 'bg-red-500/10'}`}>
-                  <AlertTriangle className={`w-5 h-5 ${marginLevel > 200
-                    ? 'text-green-600 dark:text-green-400'
-                    : marginLevel > 100
-                      ? 'text-yellow-600 dark:text-yellow-400'
-                      : 'text-red-600 dark:text-red-400'}`} />
-                </div>
-                <div>
-                  <p className={`text-sm ${marginLevel > 200
-                    ? 'text-green-700 dark:text-green-300'
-                    : marginLevel > 100
-                      ? 'text-yellow-700 dark:text-yellow-300'
-                      : 'text-red-700 dark:text-red-300'}`}>
-                    Nivel de Margen
-                  </p>
-                  <p className={`font-bold ${marginLevel > 200
-                    ? 'text-green-700 dark:text-green-300'
-                    : marginLevel > 100
-                      ? 'text-yellow-700 dark:text-yellow-300'
-                      : 'text-red-700 dark:text-red-300'}`}>
-                    {marginLevel.toFixed(0)}%
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {marginLevel > 200 ? 'Seguro' : marginLevel > 100 ? 'Precaución' : 'Peligro'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
             </CardContent>
             )}
           </Card>
