@@ -46,6 +46,12 @@ const PriceChart: React.FC<PriceChartProps> = ({
   const [smaPeriod, setSmaPeriod] = useState(20);
   const [emaPeriod, setEmaPeriod] = useState(20);
 
+  // Estados para colapsar overlays
+  const [isPriceInfoCollapsed, setIsPriceInfoCollapsed] = useState(false);
+  const [isChartControlsCollapsed, setIsChartControlsCollapsed] = useState(false);
+  const [isIndicatorsCollapsed, setIsIndicatorsCollapsed] = useState(false);
+  const [isLegendCollapsed, setIsLegendCollapsed] = useState(false);
+
   // Constantes para la persistencia
   const HISTORY_DURATION = 5 * 60 * 1000; // 5 minutos en milisegundos
   const STORAGE_KEY_PREFIX = 'priceChart_';
@@ -1000,15 +1006,33 @@ const PriceChart: React.FC<PriceChartProps> = ({
 
       {/* Información del precio actual */}
       {(externalCurrentPrice || currentPrice) > 0 && (
-        <div className="absolute top-4 left-4 bg-background/90 backdrop-blur-sm rounded-lg p-3 border">
-          <div className="text-sm text-muted-foreground">{selectedPair}</div>
-          <div className="text-lg font-bold">
-            ${(externalCurrentPrice || currentPrice).toFixed(selectedPair === 'ADA/USDT' ? 4 : 2)}
+        <div className="absolute top-4 left-4 bg-background/90 backdrop-blur-sm rounded-lg border">
+          <div className="flex items-center justify-between p-2 cursor-pointer" onClick={() => setIsPriceInfoCollapsed(!isPriceInfoCollapsed)}>
+            <div className="text-xs font-semibold text-muted-foreground">Precio</div>
+            <button className="text-muted-foreground hover:text-foreground">
+              {isPriceInfoCollapsed ? (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+              )}
+            </button>
           </div>
-          <div className="text-xs text-green-600">● En vivo</div>
-          {positions.filter((p: Position) => p.status === 'open' && p.pair === selectedPair).length > 0 && (
-            <div className="text-xs text-blue-600 mt-1">
-              {positions.filter((p: Position) => p.status === 'open' && p.pair === selectedPair).length} posición(es) activa(s)
+          {!isPriceInfoCollapsed && (
+            <div className="px-3 pb-3">
+              <div className="text-sm text-muted-foreground">{selectedPair}</div>
+              <div className="text-lg font-bold">
+                ${(externalCurrentPrice || currentPrice).toFixed(selectedPair === 'ADA/USDT' ? 4 : 2)}
+              </div>
+              <div className="text-xs text-green-600">● En vivo</div>
+              {positions.filter((p: Position) => p.status === 'open' && p.pair === selectedPair).length > 0 && (
+                <div className="text-xs text-blue-600 mt-1">
+                  {positions.filter((p: Position) => p.status === 'open' && p.pair === selectedPair).length} posición(es) activa(s)
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1016,117 +1040,167 @@ const PriceChart: React.FC<PriceChartProps> = ({
 
       {/* Controles del gráfico */}
       <div className="absolute top-4 right-4 flex flex-col gap-2">
-        <div className="flex gap-2">
-          <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2 border">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <div className="w-3 h-0.5 bg-blue-500"></div>
-              <span>Precio</span>
-            </div>
+        <div className="bg-background/90 backdrop-blur-sm rounded-lg border">
+          <div className="flex items-center justify-between p-2 cursor-pointer" onClick={() => setIsChartControlsCollapsed(!isChartControlsCollapsed)}>
+            <div className="text-xs font-semibold text-muted-foreground">Estadísticas</div>
+            <button className="text-muted-foreground hover:text-foreground">
+              {isChartControlsCollapsed ? (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+              )}
+            </button>
           </div>
-        {priceData.length > 0 && (
-          <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2 border">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>
-                {Math.round((Date.now() - new Date(priceData[0].time).getTime()) / 60000)}m historial
-              </span>
+          {!isChartControlsCollapsed && (
+            <div className="flex gap-2 px-2 pb-2">
+              <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2 border">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="w-3 h-0.5 bg-blue-500"></div>
+                  <span>Precio</span>
+                </div>
+              </div>
+              {priceData.length > 0 && (
+                <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2 border">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>
+                      {Math.round((Date.now() - new Date(priceData[0].time).getTime()) / 60000)}m historial
+                    </span>
+                  </div>
+                </div>
+              )}
+              {priceData.length > 1 && (
+                <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2 border">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    <span>
+                      {(() => {
+                        const prices = priceData.map(d => d.price);
+                        const min = Math.min(...prices);
+                        const max = Math.max(...prices);
+                        const variation = ((max - min) / min * 100);
+                        return `±${variation.toFixed(3)}%`;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
-        {priceData.length > 1 && (
-          <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2 border">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-              <span>
-                {(() => {
-                  const prices = priceData.map(d => d.price);
-                  const min = Math.min(...prices);
-                  const max = Math.max(...prices);
-                  const variation = ((max - min) / min * 100);
-                  return `±${variation.toFixed(3)}%`;
-                })()}
-              </span>
-            </div>
-          </div>
-        )}
+          )}
         </div>
         
         {/* Controles de indicadores */}
-        <div className="bg-background/90 backdrop-blur-sm rounded-lg p-3 border">
-          <div className="text-xs font-semibold text-muted-foreground mb-2">Indicadores</div>
-          
-          {/* SMA Control */}
-          <div className="flex items-center gap-2 mb-2">
-            <input
-              type="checkbox"
-              id="showSMA"
-              checked={showSMA}
-              onChange={(e) => setShowSMA(e.target.checked)}
-              className="w-4 h-4 rounded cursor-pointer"
-            />
-            <label htmlFor="showSMA" className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1">
-              <div className="w-3 h-0.5 bg-orange-500" style={{borderStyle: 'dashed', borderWidth: '1px 0'}}></div>
-              <span>SMA</span>
-            </label>
-            {showSMA && (
-              <select
-                value={smaPeriod}
-                onChange={(e) => setSmaPeriod(Number(e.target.value))}
-                className="ml-2 text-xs bg-background border rounded px-1 py-0.5 cursor-pointer"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
-            )}
+        <div className="bg-background/90 backdrop-blur-sm rounded-lg border">
+          <div className="flex items-center justify-between p-2 cursor-pointer" onClick={() => setIsIndicatorsCollapsed(!isIndicatorsCollapsed)}>
+            <div className="text-xs font-semibold text-muted-foreground">Indicadores</div>
+            <button className="text-muted-foreground hover:text-foreground">
+              {isIndicatorsCollapsed ? (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+              )}
+            </button>
           </div>
-          
-          {/* EMA Control */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="showEMA"
-              checked={showEMA}
-              onChange={(e) => setShowEMA(e.target.checked)}
-              className="w-4 h-4 rounded cursor-pointer"
-            />
-            <label htmlFor="showEMA" className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1">
-              <div className="w-3 h-0.5 bg-purple-500" style={{borderStyle: 'dashed', borderWidth: '1px 0'}}></div>
-              <span>EMA</span>
-            </label>
-            {showEMA && (
-              <select
-                value={emaPeriod}
-                onChange={(e) => setEmaPeriod(Number(e.target.value))}
-                className="ml-2 text-xs bg-background border rounded px-1 py-0.5 cursor-pointer"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
-            )}
-          </div>
+          {!isIndicatorsCollapsed && (
+            <div className="px-3 pb-3">
+              {/* SMA Control */}
+              <div className="flex items-center gap-2 mb-2">
+                <input
+                  type="checkbox"
+                  id="showSMA"
+                  checked={showSMA}
+                  onChange={(e) => setShowSMA(e.target.checked)}
+                  className="w-4 h-4 rounded cursor-pointer"
+                />
+                <label htmlFor="showSMA" className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1">
+                  <div className="w-3 h-0.5 bg-orange-500" style={{borderStyle: 'dashed', borderWidth: '1px 0'}}></div>
+                  <span>SMA</span>
+                </label>
+                {showSMA && (
+                  <select
+                    value={smaPeriod}
+                    onChange={(e) => setSmaPeriod(Number(e.target.value))}
+                    className="ml-2 text-xs bg-background border rounded px-1 py-0.5 cursor-pointer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                )}
+              </div>
+              
+              {/* EMA Control */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="showEMA"
+                  checked={showEMA}
+                  onChange={(e) => setShowEMA(e.target.checked)}
+                  className="w-4 h-4 rounded cursor-pointer"
+                />
+                <label htmlFor="showEMA" className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1">
+                  <div className="w-3 h-0.5 bg-purple-500" style={{borderStyle: 'dashed', borderWidth: '1px 0'}}></div>
+                  <span>EMA</span>
+                </label>
+                {showEMA && (
+                  <select
+                    value={emaPeriod}
+                    onChange={(e) => setEmaPeriod(Number(e.target.value))}
+                    className="ml-2 text-xs bg-background border rounded px-1 py-0.5 cursor-pointer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Leyenda de operaciones */}
         {positions && positions.some((p: Position) => p.pair === selectedPair) && (
-          <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2 border">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-green-500"></div>
-                <span>Long</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[6px] border-l-transparent border-r-transparent border-t-red-500"></div>
-                <span>Short</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <div className="w-3 h-0.5 bg-red-600" style={{borderStyle: 'dashed', borderWidth: '1px 0'}}></div>
-                <span>SL/TP</span>
-              </div>
+          <div className="bg-background/90 backdrop-blur-sm rounded-lg border">
+            <div className="flex items-center justify-between p-2 cursor-pointer" onClick={() => setIsLegendCollapsed(!isLegendCollapsed)}>
+              <div className="text-xs font-semibold text-muted-foreground">Leyenda</div>
+              <button className="text-muted-foreground hover:text-foreground">
+                {isLegendCollapsed ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                )}
+              </button>
             </div>
+            {!isLegendCollapsed && (
+              <div className="px-2 pb-2 space-y-1">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-green-500"></div>
+                  <span>Long</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[6px] border-l-transparent border-r-transparent border-t-red-500"></div>
+                  <span>Short</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="w-3 h-0.5 bg-red-600" style={{borderStyle: 'dashed', borderWidth: '1px 0'}}></div>
+                  <span>SL/TP</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

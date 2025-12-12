@@ -26,7 +26,9 @@ import {
   Trophy,
   Brain,
   Shield,
-  Loader2
+  Loader2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import operationsService from '../services/operations';
 import { mapOperationToPosition, mapPositionToOperation, CRYPTO_MAP, type MappedPosition } from '../types/operations';
@@ -147,6 +149,12 @@ export function TradingDashboard() {
   // Loading states for API operations
   const [isLoadingPositions, setIsLoadingPositions] = useState(false);
   const [isSavingOperation, setIsSavingOperation] = useState(false);
+
+  // Collapse states for panels
+  const [isTradingPanelCollapsed, setIsTradingPanelCollapsed] = useState(false);
+  const [isAccountStatsCollapsed, setIsAccountStatsCollapsed] = useState(false);
+  const [isOpenPositionsCollapsed, setIsOpenPositionsCollapsed] = useState(false);
+  const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false);
 
   // Conectar WebSockets para todos los pares en tiempo real
   useEffect(() => {
@@ -698,9 +706,17 @@ export function TradingDashboard() {
                     <RotateCcw className="w-4 h-4 mr-2" />
                     Reset
                   </Button>
+                  <Button 
+                    onClick={() => setIsTradingPanelCollapsed(!isTradingPanelCollapsed)} 
+                    variant="ghost" 
+                    size="sm"
+                  >
+                    {isTradingPanelCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                  </Button>
                 </div>
               </div>
             </CardHeader>
+            {!isTradingPanelCollapsed && (
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Order Form */}
@@ -877,9 +893,28 @@ export function TradingDashboard() {
                 </div>
               </div>
             </CardContent>
+            )}
           </Card>
 
           {/* Account Stats */}
+          <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
+            <CardHeader className="py-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Wallet className="w-5 h-5 text-primary" />
+                  Estadísticas de Cuenta
+                </CardTitle>
+                <Button 
+                  onClick={() => setIsAccountStatsCollapsed(!isAccountStatsCollapsed)} 
+                  variant="ghost" 
+                  size="sm"
+                >
+                  {isAccountStatsCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                </Button>
+              </div>
+            </CardHeader>
+            {!isAccountStatsCollapsed && (
+            <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card className="bg-card/50 backdrop-blur-sm border-green-500/20">
               <CardContent className="p-4 flex items-center gap-3">
@@ -981,16 +1016,29 @@ export function TradingDashboard() {
               </CardContent>
             </Card>
           </div>
+            </CardContent>
+            )}
+          </Card>
 
           {/* Open Positions */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="w-5 h-5" />
-                Posiciones Abiertas
-                <Badge variant="outline">{positions.filter(p => p.status === 'open').length}</Badge>
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Posiciones Abiertas
+                  <Badge variant="outline">{positions.filter(p => p.status === 'open').length}</Badge>
+                </CardTitle>
+                <Button 
+                  onClick={() => setIsOpenPositionsCollapsed(!isOpenPositionsCollapsed)} 
+                  variant="ghost" 
+                  size="sm"
+                >
+                  {isOpenPositionsCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                </Button>
+              </div>
             </CardHeader>
+            {!isOpenPositionsCollapsed && (
             <CardContent>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {positions.filter(p => p.status === 'open').length === 0 ? (
@@ -1059,17 +1107,28 @@ export function TradingDashboard() {
                 )}
               </div>
             </CardContent>
+            )}
           </Card>
 
           {/* Closed Positions History */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="w-5 h-5" />
-                Historial de Posiciones
-                <Badge variant="outline">{positions.filter(p => p.status === 'closed').length}</Badge>
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Trophy className="w-5 h-5" />
+                  Historial de Posiciones
+                  <Badge variant="outline">{positions.filter(p => p.status === 'closed').length}</Badge>
+                </CardTitle>
+                <Button 
+                  onClick={() => setIsHistoryCollapsed(!isHistoryCollapsed)} 
+                  variant="ghost" 
+                  size="sm"
+                >
+                  {isHistoryCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                </Button>
+              </div>
             </CardHeader>
+            {!isHistoryCollapsed && (
             <CardContent>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {positions.filter(p => p.status === 'closed').length === 0 ? (
@@ -1104,6 +1163,7 @@ export function TradingDashboard() {
                 )}
               </div>
             </CardContent>
+            )}
           </Card>
 
           {/* Live Notifications */}
