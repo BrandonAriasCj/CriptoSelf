@@ -144,7 +144,7 @@ const MainApp: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'my-strategy' as Tab, label: 'Mis Estrategias', icon: Target },
+    { id: 'my-strategy' as Tab, label: 'Backtesting', icon: Target },
     { id: 'trading' as Tab, label: 'Trading', icon: TrendingUp },
     { id: 'activity' as Tab, label: 'Portafolio', icon: Activity },
     { id: 'education' as Tab, label: 'Academia', icon: BookOpen },
