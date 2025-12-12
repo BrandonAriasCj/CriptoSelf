@@ -644,7 +644,7 @@ export function TradingDashboard() {
                   <Badge variant="outline" className="ml-2">En Vivo</Badge>
                 </CardTitle>
                 <div className="flex flex-wrap gap-1">
-                  {['1m', '5m', '15m', '1h', '4h', '1d'].map((timeframe) => (
+                  {['5m'].map((timeframe) => (
                     <Button
                       key={timeframe}
                       variant="ghost"
