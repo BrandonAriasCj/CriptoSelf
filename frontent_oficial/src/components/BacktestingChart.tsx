@@ -94,7 +94,7 @@ export const BacktestingChart: React.FC<BacktestingChartProps> = ({ data }) => {
           data={[priceTrace, volumeTrace, patternTrace]}
           layout={{
             title: {
-              text: '📊 Análisis de Backtesting - BTC/USDT',
+              text: 'Análisis de Backtesting - BTC/USDT',
               font: { color: '#e5e7eb', size: 18 }
             },
             paper_bgcolor: '#111827',

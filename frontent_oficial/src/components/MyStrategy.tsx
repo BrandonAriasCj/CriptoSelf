@@ -537,50 +537,7 @@ export function MyStrategy() {
         {/* Resultados del Backtesting */}
         {backtestData && (
           <>
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                    <BarChart3 className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-blue-700 dark:text-blue-300">Datos Procesados</p>
-                    <p className="font-bold text-blue-900 dark:text-blue-100">
-                      {backtestData.fechas?.length || 0} velas
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
 
-              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                    <TrendingUp className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-green-700 dark:text-green-300">Rentabilidad</p>
-                    <p className="font-bold text-green-900 dark:text-green-100">
-                      {backtestData.resumen?.rentabilidad_porcentaje?.toFixed(2) || '0.00'}%
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                    <Target className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-purple-700 dark:text-purple-300">Tasa de Acierto</p>
-                    <p className="font-bold text-purple-900 dark:text-purple-100">
-                      {backtestData.resumen?.tasa_acierto?.toFixed(1) || '0.0'}%
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
 
             {/* Gráfico */}
             <Card>
@@ -623,92 +580,7 @@ export function MyStrategy() {
               </CardContent>
             </Card>
 
-            {/* Resumen de Resultados */}
-            <div className="flex flex-row gap-6">
-              {/* Análisis de Patrones */}
-              <Card className="flex-1">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5" />
-                    Análisis de Patrones
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                      <p className="text-2xl font-bold text-blue-600">
-                        {backtestData.patronVela?.filter((p: any) => p > 0).length || 0}
-                      </p>
-                      <p className="text-sm text-blue-700 dark:text-blue-300">
-                        Patrones Detectados
-                      </p>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                      <p className="text-2xl font-bold text-green-600">
-                        {backtestData.patronVela ?
-                          ((backtestData.patronVela.filter((p: any) => p > 0).length / backtestData.patronVela.length) * 100).toFixed(1)
-                          : '0.0'
-                        }%
-                      </p>
-                      <p className="text-sm text-green-700 dark:text-green-300">
-                        Tasa de Detección
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
 
-              {/* Resumen Financiero */}
-              <Card className="flex-1">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="w-5 h-5" />
-                    Resumen Financiero
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Capital */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                        <p className="text-lg font-bold">
-                          ${backtestData.resumen?.capital_inicial?.toFixed(2) || '0.00'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Capital Inicial</p>
-                      </div>
-                      <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                        <p className="text-lg font-bold">
-                          ${backtestData.resumen?.capital_final?.toFixed(2) || '0.00'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Capital Final</p>
-                      </div>
-                    </div>
-
-                    {/* Operaciones */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                        <p className="text-lg font-bold text-blue-600">
-                          {backtestData.resumen?.operaciones_totales || 0}
-                        </p>
-                        <p className="text-xs text-blue-700 dark:text-blue-300">Total</p>
-                      </div>
-                      <div className="text-center p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                        <p className="text-lg font-bold text-green-600">
-                          {backtestData.resumen?.operaciones_ganadas || 0}
-                        </p>
-                        <p className="text-xs text-green-700 dark:text-green-300">Ganadas</p>
-                      </div>
-                      <div className="text-center p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
-                        <p className="text-lg font-bold text-red-600">
-                          {backtestData.resumen?.operaciones_perdidas || 0}
-                        </p>
-                        <p className="text-xs text-red-700 dark:text-red-300">Perdidas</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
           </>
         )}
       </div>
