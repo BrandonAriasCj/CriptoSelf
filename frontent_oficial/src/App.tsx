@@ -227,7 +227,7 @@ const MainApp: React.FC = () => {
           <Avatar className="h-10 w-10">
             <AvatarImage src={user?.avatar} alt={user?.username} />
             <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-avatar-overlay">
-              {user?.first_name?.[0]}{user?.last_name?.[0]} || {user?.username?.[0]?.toUpperCase()}
+              {(user?.first_name?.[0] || '') + (user?.last_name?.[0] || '') || user?.username?.[0]?.toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
@@ -297,8 +297,7 @@ const MainApp: React.FC = () => {
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user?.avatar} alt={user?.username} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-avatar-overlay text-xs">
-                      {user?.first_name?.[0] || user?.username?.[0]?.toUpperCase()}
-                      {user?.last_name?.[0] || ""}
+                      {(user?.first_name?.[0] || '') + (user?.last_name?.[0] || '') || user?.username?.[0]?.toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -412,8 +411,7 @@ const MainApp: React.FC = () => {
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={user?.avatar} alt={user?.username} />
                           <AvatarFallback>
-                            {user?.first_name?.[0] || user?.username?.[0]?.toUpperCase()}
-                            {user?.last_name?.[0] || ""}
+                            {(user?.first_name?.[0] || '') + (user?.last_name?.[0] || '') || user?.username?.[0]?.toUpperCase() || 'U'}
                           </AvatarFallback>
                         </Avatar>
                       </Button>

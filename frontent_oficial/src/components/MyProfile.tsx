@@ -116,10 +116,29 @@ export function MyProfile() {
   }
 
   const getInitials = () => {
-    if (userInfo.first_name && userInfo.last_name) {
-      return `${userInfo.first_name[0]}${userInfo.last_name[0]}`.toUpperCase();
+    // Limpiar y validar first_name y last_name
+    const firstName = (userInfo.first_name || '').trim();
+    const lastName = (userInfo.last_name || '').trim();
+    
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
     }
-    return userInfo.username.substring(0, 2).toUpperCase();
+    
+    if (firstName) {
+      return firstName.substring(0, 2).toUpperCase();
+    }
+    
+    if (lastName) {
+      return lastName.substring(0, 2).toUpperCase();
+    }
+    
+    // Fallback al username
+    const username = (userInfo.username || '').trim();
+    if (username.length >= 2) {
+      return username.substring(0, 2).toUpperCase();
+    }
+    
+    return 'US'; // Fallback final
   };
 
   const getFullName = () => {
