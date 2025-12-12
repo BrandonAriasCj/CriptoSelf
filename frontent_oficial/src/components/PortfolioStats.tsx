@@ -48,9 +48,11 @@ interface RecentTrade {
   status: 'open' | 'closed';
 }
 
+const INITIAL_BALANCE = 1000;
+
 export function PortfolioStats() {
   const [metrics, setMetrics] = useState<PortfolioMetrics>({
-    totalBalance: 10000,
+    totalBalance: INITIAL_BALANCE,
     totalPnL: 0,
     totalPnLPercent: 0,
     totalTrades: 0,
@@ -114,9 +116,8 @@ export function PortfolioStats() {
 
       const totalVolume = positions.reduce((sum, p) => sum + (p.size * p.entryPrice), 0);
 
-      const initialBalance = 10000;
-      const totalBalance = initialBalance + totalPnL;
-      const totalPnLPercent = (totalPnL / initialBalance) * 100;
+      const totalBalance = INITIAL_BALANCE + totalPnL;
+      const totalPnLPercent = (totalPnL / INITIAL_BALANCE) * 100;
 
       setMetrics({
         totalBalance,
@@ -396,7 +397,7 @@ export function PortfolioStats() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-2">Balance Inicial</p>
-              <p className="text-2xl font-bold">$10,000.00</p>
+              <p className="text-2xl font-bold">${INITIAL_BALANCE.toLocaleString()}.00</p>
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-2">Balance Actual</p>

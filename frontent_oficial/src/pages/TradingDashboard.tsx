@@ -105,12 +105,15 @@ export function TradingDashboard() {
   const [priceHistory, setPriceHistory] = useState<number[]>([]);
   const [positions, setPositions] = useState<MappedPosition[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  
+  const INITIAL_BALANCE = 1000;
+  
   const [account, setAccount] = useState<TradingAccount>({
-    balance: 10000,
-    initialBalance: 10000,
-    equity: 10000,
+    balance: INITIAL_BALANCE,
+    initialBalance: INITIAL_BALANCE,
+    equity: INITIAL_BALANCE,
     margin: 0,
-    freeMargin: 10000,
+    freeMargin: INITIAL_BALANCE,
     marginLevel: 0,
     totalPnL: 0,
     unrealizedPnL: 0,
@@ -513,11 +516,11 @@ export function TradingDashboard() {
 
   const resetAccount = () => {
     setAccount({
-      balance: 10000,
-      initialBalance: 10000,
-      equity: 10000,
+      balance: INITIAL_BALANCE,
+      initialBalance: INITIAL_BALANCE,
+      equity: INITIAL_BALANCE,
       margin: 0,
-      freeMargin: 10000,
+      freeMargin: INITIAL_BALANCE,
       marginLevel: 0,
       totalPnL: 0,
       unrealizedPnL: 0,
