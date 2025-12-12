@@ -81,7 +81,8 @@ def update_lesson_progress(request, lesson_id):
     time_spent = request.data.get('time_spent_minutes', 0)
     
     progress.progress_percentage = min(100, max(0, progress_percentage))
-    progress.time_spent_minutes += time_spent
+    # Reemplazar el tiempo en lugar de acumularlo (el frontend ya lleva el total)
+    progress.time_spent_minutes = time_spent
     
     if progress.progress_percentage >= 100:
         progress.status = 'completed'
