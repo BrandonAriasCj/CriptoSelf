@@ -182,10 +182,16 @@ const AcademyComplete: React.FC = () => {
     setSelectedLesson(null);
   };
 
-  const handleLessonComplete = () => {
-    // Actualizar el progreso de la lección localmente
-    // En una implementación completa, esto se enviaría al backend
+  const handleLessonComplete = async () => {
     console.log(`Lección ${selectedLesson} completada`);
+    
+    // Recargar progreso del usuario
+    await loadProgress();
+    
+    // Recargar lecciones de la categoría para actualizar el estado
+    if (selectedCategory) {
+      await loadLessons(selectedCategory);
+    }
     
     // Volver a la vista de categoría
     handleBackToCategory();

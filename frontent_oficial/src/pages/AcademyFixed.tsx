@@ -140,7 +140,7 @@ const AcademyFixed: React.FC = () => {
               Academia de Trading
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Aprende trading desde cero hasta nivel avanzado con nuestro programa académico completo.
+              esde cero hasta nivel avanzado con nuestro programa académico completo.
               Teoría, práctica y evaluaciones para convertirte en un trader exitoso.
             </p>
           </div>

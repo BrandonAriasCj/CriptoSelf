@@ -5,8 +5,6 @@ import {
   ArrowLeft, 
   ArrowRight,
   CheckCircle, 
-  Clock, 
-  BookOpen, 
   Award,
   Play,
   Pause,
@@ -59,6 +57,7 @@ const LessonViewer: React.FC<LessonViewerProps> = ({ lessonId, onBack, onComplet
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizResult, setQuizResult] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [hasStarted, setHasStarted] = useState(false);
 
   useEffect(() => {
     loadLesson();
@@ -69,25 +68,100 @@ const LessonViewer: React.FC<LessonViewerProps> = ({ lessonId, onBack, onComplet
     
     if (isActive) {
       interval = setInterval(() => {
-        setTimeSpent(prev => prev + 1);
-        
-        // Auto-update progress every 10 seconds
-        if (timeSpent % 10 === 0 && timeSpent > 0) {
-          setProgress(prev => Math.min(100, prev + 5));
-        }
+        setTimeSpent(prev => {
+          const newTime = prev + 1;
+          
+          // Auto-update progress every 3 seconds (más rápido para testing)
+          if (newTime % 3 === 0 && newTime > 0) {
+            setProgress(currentProgress => {
+              const newProgress = Math.min(100, currentProgress + 10);
+              updateProgressInBackend(newProgress);
+              return newProgress;
+            });
+          }
+          
+          return newTime;
+        });
       }, 1000);
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, timeSpent]);
+  }, [isActive]);
+
+  const updateProgressInBackend = async (progressPercentage: number) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      await fetch(`/api/lessons/lessons/${lessonId}/progress/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          progress_percentage: progressPercentage,
+          time_spent_minutes: Math.floor(timeSpent / 60)
+        })
+      });
+    } catch (error) {
+      console.error('Error updating progress:', error);
+    }
+  };
 
   const loadLesson = async () => {
     try {
       setLoading(true);
       
-      // Datos de ejemplo para la lección
+      const token = localStorage.getItem('access_token');
+      
+      // Intentar cargar desde la API
+      if (token) {
+        try {
+          const response = await fetch(`/api/lessons/lessons/${lessonId}/`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const apiLesson = await response.json();
+            setLesson(apiLesson);
+            
+            // Cargar progreso existente
+            if (apiLesson.user_progress) {
+              const existingProgress = apiLesson.user_progress.progress_percentage || 0;
+              setProgress(existingProgress);
+              setTimeSpent((apiLesson.user_progress.time_spent_minutes || 0) * 60);
+              
+              // Si ya tiene progreso, marcar como iniciado
+              if (existingProgress > 0) {
+                setHasStarted(true);
+              }
+            }
+            
+            // Iniciar la lección en el backend
+            await fetch(`/api/lessons/lessons/${lessonId}/start/`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            });
+            
+            setIsActive(true);
+            setLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error('Error loading from API, using fallback:', error);
+        }
+      }
+      
+      // Fallback: Datos de ejemplo para la lección
       const mockLesson: Lesson = {
         id: lessonId,
         title: lessonId === 1 ? '¿Qué es el Trading?' : 'Terminología Básica del Trading',
@@ -213,9 +287,12 @@ El trading puede ser una actividad lucrativa, pero requiere educación, práctic
     }
   };
 
-  const completeLesson = () => {
+  const completeLesson = async () => {
     setProgress(100);
     setIsActive(false);
+    
+    // Actualizar progreso al 100% en el backend
+    await updateProgressInBackend(100);
     
     if (lesson?.quiz) {
       setShowQuiz(true);
@@ -231,8 +308,50 @@ El trading puede ser una actividad lucrativa, pero requiere educación, práctic
     }));
   };
 
-  const submitQuiz = () => {
-    // Respuestas correctas: pregunta 1 = respuesta 2, pregunta 2 = respuesta 4
+  const submitQuiz = async () => {
+    const token = localStorage.getItem('access_token');
+    
+    if (token && lesson?.quiz) {
+      try {
+        // Convertir formato de respuestas para el backend
+        const answers: Record<string, number[]> = {};
+        Object.entries(quizAnswers).forEach(([questionId, answerId]) => {
+          answers[questionId] = [answerId];
+        });
+        
+        const response = await fetch(`/api/lessons/quizzes/${lesson.quiz.id}/submit/`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            answers,
+            time_taken_minutes: Math.floor(timeSpent / 60)
+          })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          setQuizResult({
+            score: result.attempt.score,
+            totalQuestions: result.attempt.max_score,
+            percentage: result.attempt.percentage,
+            passed: result.attempt.passed
+          });
+          setQuizSubmitted(true);
+          
+          if (result.attempt.passed) {
+            onComplete?.();
+          }
+          return;
+        }
+      } catch (error) {
+        console.error('Error submitting quiz, using fallback:', error);
+      }
+    }
+    
+    // Fallback: evaluación local
     const correctAnswers = { 1: 2, 2: 4 };
     let score = 0;
     const totalQuestions = Object.keys(correctAnswers).length;
@@ -340,7 +459,12 @@ El trading puede ser una actividad lucrativa, pero requiere educación, práctic
           </div>
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>Progreso: {progress}%</span>
-            <span>{progress === 100 ? 'Completada' : 'En progreso'}</span>
+            <span>
+              {progress === 0 ? 'No iniciada' : 
+               progress === 100 ? '✅ Completada' : 
+               progress >= 50 ? '🎯 Casi lista' : 
+               '📖 En progreso'}
+            </span>
           </div>
         </div>
 
@@ -378,22 +502,55 @@ El trading puede ser una actividad lucrativa, pero requiere educación, práctic
 
             {/* Action Buttons */}
             <div className="flex justify-between items-center mt-8 pt-6 border-t border-border">
-              <button
-                onClick={() => setProgress(Math.min(100, progress + 25))}
-                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors text-sm font-medium"
-              >
-                <ArrowRight className="w-4 h-4" />
-                Continuar
-              </button>
-
-              {progress >= 80 && (
+              {!hasStarted ? (
                 <button
-                  onClick={completeLesson}
-                  className="flex items-center gap-2 px-6 py-2 bg-chart-2 hover:bg-chart-2/90 text-white rounded-lg transition-colors text-sm font-medium"
+                  onClick={() => {
+                    setHasStarted(true);
+                    setIsActive(true);
+                    const newProgress = Math.max(10, progress);
+                    setProgress(newProgress);
+                    updateProgressInBackend(newProgress);
+                  }}
+                  className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors font-medium shadow-lg"
                 >
-                  <CheckCircle className="w-4 h-4" />
-                  Completar Lección
+                  <Play className="w-5 h-5" />
+                  Comenzar Lección
                 </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      const newProgress = Math.min(100, progress + 20);
+                      setProgress(newProgress);
+                      updateProgressInBackend(newProgress);
+                    }}
+                    disabled={progress >= 100}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground rounded-lg transition-colors text-sm font-medium"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                    Avanzar +20%
+                  </button>
+
+                  {progress >= 50 && progress < 100 && (
+                    <button
+                      onClick={completeLesson}
+                      className="flex items-center gap-2 px-6 py-2 bg-chart-2 hover:bg-chart-2/90 text-white rounded-lg transition-colors text-sm font-medium shadow-lg"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Completar Lección
+                    </button>
+                  )}
+
+                  {progress >= 100 && !lesson?.quiz && (
+                    <button
+                      onClick={onBack}
+                      className="flex items-center gap-2 px-6 py-2 bg-chart-2 hover:bg-chart-2/90 text-white rounded-lg transition-colors text-sm font-medium shadow-lg"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Lección Completada - Volver
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
