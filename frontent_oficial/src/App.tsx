@@ -13,9 +13,9 @@ import {
   BacktestResults,
   MyStrategy,
   Settings,
-  BotActivity,
   Education
 } from './pages';
+import { PortfolioStats } from './components/PortfolioStats';
 import { MyProfile } from './components/MyProfile';
 import Academy from './pages/Academy';
 import AcademySimple from './pages/AcademySimple';
@@ -146,7 +146,7 @@ const MainApp: React.FC = () => {
   const tabs = [
     { id: 'my-strategy' as Tab, label: 'Mis Estrategias', icon: Target },
     { id: 'trading' as Tab, label: 'Trading', icon: TrendingUp },
-    { id: 'activity' as Tab, label: 'Actividad', icon: Activity },
+    { id: 'activity' as Tab, label: 'Portafolio', icon: Activity },
     { id: 'education' as Tab, label: 'Academia', icon: BookOpen },
     { id: 'settings' as Tab, label: 'Configuración', icon: SettingsIcon },
   ];
@@ -166,7 +166,7 @@ const MainApp: React.FC = () => {
       case 'education':
         return <AcademyComplete />;
       case 'activity':
-        return <BotActivity />;
+        return <PortfolioStats />;
       case 'settings':
         return <Settings />;
       case 'profile':
@@ -386,7 +386,7 @@ const MainApp: React.FC = () => {
                               : activeTab === "education"
                                 ? "Academia de trading: aprende desde lo básico hasta estrategias avanzadas"
                                 : activeTab === "activity"
-                                  ? "Monitorea la actividad y rendimiento del bot"
+                                  ? "Resumen de tu portafolio y estadísticas de rendimiento"
                                   : activeTab === "profile"
                                     ? "Tu perfil personal y configuración de cuenta"
                                     : "Configuración y preferencias del sistema"}

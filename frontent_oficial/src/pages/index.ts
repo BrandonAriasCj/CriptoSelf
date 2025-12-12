@@ -14,5 +14,4 @@ export { BacktestResults } from './BacktestResults';
 // Re-export component pages that are still in components folder
 export { MyStrategy } from '../components/MyStrategy';
 export { Settings } from '../components/Settings';
-export { BotActivity } from '../components/BotActivity';
 export { Education } from '../components/Education';
