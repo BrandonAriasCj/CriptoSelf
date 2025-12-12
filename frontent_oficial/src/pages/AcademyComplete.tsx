@@ -18,7 +18,6 @@ import {
 import { useAcademyCategories, useUserProgress, useCategoryLessons } from '../hooks/useAcademyApi';
 import LessonViewer from '../components/LessonViewer';
 import ProgressStats from '../components/ProgressStats';
-import AuthStatus from '../components/AuthStatus';
 
 interface LessonCategory {
   id: number;
@@ -360,17 +359,15 @@ const AcademyComplete: React.FC = () => {
         </div>
       </div>
 
-      {/* Auth Status & Error Alert */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <AuthStatus />
-        
-        {error && (
-          <div className="bg-destructive/10 rounded-lg p-4 border border-destructive/20 flex items-center mt-4">
+      {/* Error Alert */}
+      {error && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="bg-destructive/10 rounded-lg p-4 border border-destructive/20 flex items-center">
             <AlertCircle className="w-5 h-5 text-destructive mr-3 flex-shrink-0" />
             <p className="text-destructive text-sm">{error}</p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Progress Overview */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
